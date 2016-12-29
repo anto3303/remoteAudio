@@ -1,8 +1,6 @@
 package audio
 
 import (
-	"fmt"
-
 	sbAudio "github.com/dh1tw/remoteAudio/sb_audio"
 	"github.com/gogo/protobuf/proto"
 	"github.com/hraban/opus"
@@ -25,8 +23,7 @@ type serializer struct {
 
 func (s *serializer) SerializeOpusAudioMsg(in []float32) ([]byte, error) {
 
-	fmt.Println("in bytes to encode:", len(in))
-	len, err := s.opusEncoder.EncodeFloat32(in, s.opusBuffer)
+	length, err := s.opusEncoder.EncodeFloat32(in, s.opusBuffer)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +35,7 @@ func (s *serializer) SerializeOpusAudioMsg(in []float32) ([]byte, error) {
 	msg.FrameLength = s.framesPerBufferI
 	msg.SamplingRate = s.samplingRateI
 	msg.Bitrate = s.bitrateI
-	msg.AudioRaw = s.opusBuffer[:len]
+	msg.AudioRaw = s.opusBuffer[:length]
 	msg.Codec = sbAudio.Codec_OPUS
 
 	data, err := proto.Marshal(msg)

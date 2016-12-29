@@ -60,8 +60,14 @@ func RecorderAsync(ad AudioDevice) {
 	s.channelsI = int32(s.wireOutputChannels)
 	s.bitrateI = int32(viper.GetInt("wire.bitrate"))
 
-	opusEncoder, err := opus.NewEncoder(int(s.Samplingrate), s.Channels, opus.APPLICATION_VOIP)
+	opusEncoder, err := opus.NewEncoder(int(s.Samplingrate), s.Channels, opus.APPLICATION_RESTRICTED_LOWDELAY)
 	if err != nil || opusEncoder == nil {
+		fmt.Println(err)
+		return
+	}
+
+	err = opusEncoder.SetBitrate(int(s.bitrateI))
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
@@ -69,7 +75,8 @@ func RecorderAsync(ad AudioDevice) {
 	fmt.Println("opus encoder channels:", s.Channels)
 
 	s.opusEncoder = opusEncoder
-	s.opusBuffer = make([]byte, int(s.FramesPerBuffer)*s.Channels)
+	// s.opusBuffer = make([]byte, int(s.FramesPerBuffer)*s.Channels)
+	s.opusBuffer = make([]byte, 500)
 
 	stream, err = portaudio.OpenStream(streamParm, s.recordCb)
 

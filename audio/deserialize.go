@@ -2,7 +2,6 @@ package audio
 
 import (
 	"errors"
-	"fmt"
 
 	sbAudio "github.com/dh1tw/remoteAudio/sb_audio"
 	"github.com/gogo/protobuf/proto"
@@ -29,8 +28,6 @@ func (d *deserializer) DeserializeOpusAudioMsg(data []byte) error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Println("out bytes decoded:", len)
 
 	d.out = d.opusBuffer[:len*d.Channels]
 
