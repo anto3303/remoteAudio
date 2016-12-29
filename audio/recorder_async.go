@@ -5,6 +5,7 @@ import (
 
 	"github.com/dh1tw/gosamplerate"
 	"github.com/gordonklaus/portaudio"
+	"github.com/hraban/opus"
 	"github.com/spf13/viper"
 )
 
@@ -59,6 +60,17 @@ func RecorderAsync(ad AudioDevice) {
 	s.channelsI = int32(s.wireOutputChannels)
 	s.bitrateI = int32(viper.GetInt("wire.bitrate"))
 
+	opusEncoder, err := opus.NewEncoder(int(s.Samplingrate), s.Channels, opus.APPLICATION_VOIP)
+	if err != nil || opusEncoder == nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println("opus encoder channels:", s.Channels)
+
+	s.opusEncoder = opusEncoder
+	s.opusBuffer = make([]byte, int(s.FramesPerBuffer)*s.Channels)
+
 	stream, err = portaudio.OpenStream(streamParm, s.recordCb)
 
 	if err != nil {
@@ -92,7 +104,7 @@ func RecorderAsync(ad AudioDevice) {
 		case msg := <-ad.ToSerialize:
 			// serialize the Audio data and send to for
 			// transmission to the comms coroutine
-			data, err := s.SerializeAudioMsg(msg.Raw)
+			data, err := s.SerializeOpusAudioMsg(msg.Raw)
 			if err != nil {
 				fmt.Println(err)
 			} else {

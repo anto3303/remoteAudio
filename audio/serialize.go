@@ -1,12 +1,19 @@
 package audio
 
-import "github.com/gogo/protobuf/proto"
-import sbAudio "github.com/dh1tw/remoteAudio/sb_audio"
+import (
+	"fmt"
+
+	sbAudio "github.com/dh1tw/remoteAudio/sb_audio"
+	"github.com/gogo/protobuf/proto"
+	"github.com/hraban/opus"
+)
 
 // struct will all repetitive variables for serialization of
 // audio packets
 type serializer struct {
 	*AudioDevice
+	opusEncoder        *opus.Encoder
+	opusBuffer         []byte
 	wireSamplingrate   float64
 	wireOutputChannels int
 	framesPerBufferI   int32 // framesPerBuffer
@@ -14,6 +21,32 @@ type serializer struct {
 	channelsI          int32 // output channels
 	bitrateI           int32 // bitrate
 	userID             string
+}
+
+func (s *serializer) SerializeOpusAudioMsg(in []float32) ([]byte, error) {
+
+	fmt.Println("in bytes to encode:", len(in))
+	len, err := s.opusEncoder.EncodeFloat32(in, s.opusBuffer)
+	if err != nil {
+		return nil, err
+	}
+
+	msg := sbAudioDataPool.Get().(*sbAudio.AudioData)
+	defer sbAudioDataPool.Put(msg)
+
+	msg.Channels = s.channelsI
+	msg.FrameLength = s.framesPerBufferI
+	msg.SamplingRate = s.samplingRateI
+	msg.Bitrate = s.bitrateI
+	msg.AudioRaw = s.opusBuffer[:len]
+	msg.Codec = sbAudio.Codec_OPUS
+
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 // SerializeAudioMsg serializes audio frames in a protocol buffers with the
@@ -75,8 +108,7 @@ func (s *serializer) SerializeAudioMsg(in []float32) ([]byte, error) {
 	msg.FrameLength = s.framesPerBufferI
 	msg.SamplingRate = s.samplingRateI
 	msg.Bitrate = s.bitrateI
-	msg.Audio = audioToWire
-	msg.UserId = s.userID
+	msg.AudioPacked = audioToWire
 
 	data, err := proto.Marshal(msg)
 	if err != nil {
