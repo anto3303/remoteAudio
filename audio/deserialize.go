@@ -3,9 +3,9 @@ package audio
 import (
 	"errors"
 
+	"github.com/dh1tw/opus"
 	sbAudio "github.com/dh1tw/remoteAudio/sb_audio"
 	"github.com/gogo/protobuf/proto"
-	"github.com/hraban/opus"
 )
 
 type deserializer struct {

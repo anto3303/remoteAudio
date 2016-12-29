@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/dh1tw/gosamplerate"
+	"github.com/dh1tw/opus"
 	"github.com/gordonklaus/portaudio"
-	"github.com/hraban/opus"
 	"github.com/spf13/viper"
 )
 
