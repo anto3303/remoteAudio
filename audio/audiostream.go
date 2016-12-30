@@ -98,7 +98,7 @@ func GetChannel(ch string) int {
 
 // GetOpusApplication returns the integer representation of a
 // Opus application value string (typically read from application settings)
-func GetOpusApplication(app string) (int, error) {
+func GetOpusApplication(app string) (opus.Application, error) {
 	switch app {
 	case "audio":
 		return opus.AppAudio, nil
@@ -112,18 +112,18 @@ func GetOpusApplication(app string) (int, error) {
 
 // GetOpusMaxBandwith returns the integer representation of an
 // Opus max bandwitdh value string (typically read from application settings)
-func GetOpusMaxBandwith(maxBw string) (int, error) {
+func GetOpusMaxBandwith(maxBw string) (opus.Bandwidth, error) {
 	switch strings.ToLower(maxBw) {
 	case "narrowband":
-		return opus.BandwidthNarrowband, nil
+		return opus.Narrowband, nil
 	case "mediumband":
-		return opus.BandwidthMediumBand, nil
+		return opus.MediumBand, nil
 	case "wideband":
-		return opus.BandwidthWideBand, nil
+		return opus.WideBand, nil
 	case "superwideband":
-		return opus.BandwidthSuperWideBand, nil
+		return opus.SuperWideBand, nil
 	case "fullband":
-		return opus.BandwidthFullband, nil
+		return opus.Fullband, nil
 	}
 
 	return 0, errors.New("unknown opus max bandwidth value")
