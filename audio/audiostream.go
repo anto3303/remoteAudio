@@ -2,11 +2,13 @@ package audio
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/dh1tw/gosamplerate"
+	"github.com/dh1tw/opus"
 	sbAudio "github.com/dh1tw/remoteAudio/sb_audio"
 	"github.com/gordonklaus/portaudio"
 )
@@ -19,6 +21,11 @@ const (
 const (
 	MONO   = 1
 	STEREO = 2
+)
+
+const (
+	PCM  = 1
+	OPUS = 2
 )
 
 var bitMapToInt32 = map[int32]float32{
@@ -87,6 +94,52 @@ func GetChannel(ch string) int {
 		return STEREO
 	}
 	return 0
+}
+
+// GetOpusApplication returns the integer representation of a
+// Opus application value string (typically read from application settings)
+func GetOpusApplication(app string) (int, error) {
+	switch app {
+	case "audio":
+		return opus.APPLICATION_AUDIO, nil
+	case "restricted_lowdelay":
+		return opus.APPLICATION_RESTRICTED_LOWDELAY, nil
+	case "voip":
+		return opus.APPLICATION_VOIP, nil
+	}
+	return 0, errors.New("unknown opus application value")
+}
+
+// GetOpusMaxBandwith returns the integer representation of an
+// Opus max bandwitdh value string (typically read from application settings)
+func GetOpusMaxBandwith(maxBw string) (int, error) {
+	switch strings.ToLower(maxBw) {
+	case "narrowband":
+		return opus.OPUS_BANDWIDTH_NARROWBAND, nil
+	case "mediumband":
+		return opus.OPUS_BANDWIDTH_MEDIUMBAND, nil
+	case "wideband":
+		return opus.OPUS_BANDWIDTH_WIDEBAND, nil
+	case "superwideband":
+		return opus.OPUS_BANDWIDTH_SUPERWIDEBAND, nil
+	case "fullband":
+		return opus.OPUS_BANDWIDTH_FULLBAND, nil
+	}
+
+	return 0, errors.New("unknown opus max bandwidth value")
+}
+
+// GetCodec return the integer representation of a string containing the
+// name of an audio codec
+func GetCodec(codec string) (int, error) {
+	switch strings.ToLower(codec) {
+	case "pcm":
+		return PCM, nil
+	case "opus":
+		return OPUS, nil
+	}
+	errMsg := fmt.Sprintf("unknown codec: %s", codec)
+	return 0, errors.New(errMsg)
 }
 
 // Sync Pool for Protocol Buffers Audio objects (to reduce memory allocation / garbage collection for short lived objects)

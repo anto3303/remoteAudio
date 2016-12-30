@@ -37,7 +37,7 @@ func PlayerSync(ad AudioDevice) {
 		}
 	}
 
-	ad.out = make([]float32, 4096)
+	ad.out = make([]float32, 500000)
 
 	// streamParm := portaudio.LowLatencyParameters(nil, deviceInfo)
 
@@ -83,8 +83,8 @@ func PlayerSync(ad AudioDevice) {
 	var d deserializer
 	d.AudioDevice = &ad
 
-	opusDecoder, err := opus.NewDecoder(int(d.Samplingrate), d.Channels)
-	fmt.Println("opus decoder channels:", d.Channels)
+	opusDecoder, err := opus.NewDecoder(int(ad.Samplingrate), ad.Channels)
+	fmt.Println("opus decoder channels:", ad.Channels)
 	// opusDecoder, err := opus.NewDecoder(int(d.Samplingrate), 2)
 	if err != nil || opusDecoder == nil {
 		fmt.Println(err)
@@ -99,8 +99,7 @@ func PlayerSync(ad AudioDevice) {
 		case msg := <-ad.ToDeserialize:
 			// if !enableLoopback {
 			// fmt.Println(stream.Info())
-			err := d.DeserializeOpusAudioMsg(msg.Data)
-			// err := ad.DeserializeAudioMsg(msg.Data)
+			err := d.DeserializeAudioMsg(msg.Data)
 			if err != nil {
 				fmt.Println(err)
 			} else {

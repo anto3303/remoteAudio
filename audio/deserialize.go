@@ -14,8 +14,7 @@ type deserializer struct {
 	opusBuffer  []float32
 }
 
-func (d *deserializer) DeserializeOpusAudioMsg(data []byte) error {
-
+func (d *deserializer) DeserializeAudioMsg(data []byte) error {
 	msg := sbAudioDataPool.Get().(*sbAudio.AudioData)
 	defer sbAudioDataPool.Put(msg)
 
@@ -23,6 +22,22 @@ func (d *deserializer) DeserializeOpusAudioMsg(data []byte) error {
 	if err != nil {
 		return err
 	}
+
+	if msg.Codec == sbAudio.Codec_OPUS {
+		err := d.DeserializeOpusAudioMsg(msg)
+		if err != nil {
+			return err
+		}
+	} else if msg.Codec == sbAudio.Codec_PCM {
+		err := d.DeserializePCMAudioMsg(msg)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (d *deserializer) DeserializeOpusAudioMsg(msg *sbAudio.AudioData) error {
 
 	len, err := d.opusDecoder.DecodeFloat32(msg.GetAudioRaw(), d.opusBuffer)
 	if err != nil {
@@ -37,18 +52,10 @@ func (d *deserializer) DeserializeOpusAudioMsg(data []byte) error {
 // DeserializeAudioMsg deserializes protocol buffers containing audio frames with
 // the corresponding meta data. In case the Audio channels and / or Samplerate
 // doesn't match with the hosts values, both will be converted to match.
-func (ad *AudioDevice) DeserializeAudioMsg(data []byte) error {
-
-	msg := sbAudioDataPool.Get().(*sbAudio.AudioData)
-	defer sbAudioDataPool.Put(msg)
-
-	err := proto.Unmarshal(data, msg)
-	if err != nil {
-		return err
-	}
+func (ad *AudioDevice) DeserializePCMAudioMsg(msg *sbAudio.AudioData) error {
 
 	var samplingrate float64
-	var channels, bitrate int
+	var channels, bitdepth int
 
 	channels = int(msg.GetChannels())
 	if channels == 0 {
@@ -61,10 +68,10 @@ func (ad *AudioDevice) DeserializeAudioMsg(data []byte) error {
 	}
 
 	// only accept 8, 12, 16 or 32 bit streams
-	bitrate = int(msg.GetBitrate())
+	bitdepth = int(msg.GetBitDepth())
 
-	if bitrate != 8 && bitrate != 12 && bitrate != 16 && bitrate != 32 {
-		return errors.New("incompatible bitrate")
+	if bitdepth != 8 && bitdepth != 12 && bitdepth != 16 && bitdepth != 32 {
+		return errors.New("incompatible audio bit depth")
 	}
 
 	if len(msg.AudioPacked) == 0 {
@@ -74,7 +81,7 @@ func (ad *AudioDevice) DeserializeAudioMsg(data []byte) error {
 	// convert the data to float32 (8bit, 12bit, 16bit, 32bit)
 	convertedAudio := make([]float32, 0, len(msg.AudioPacked))
 	for _, sample := range msg.AudioPacked {
-		convertedAudio = append(convertedAudio, float32(sample)/bitMapToFloat32[bitrate])
+		convertedAudio = append(convertedAudio, float32(sample)/bitMapToFloat32[bitdepth])
 	}
 
 	if msg.Codec == sbAudio.Codec_PCM {
@@ -103,6 +110,7 @@ func (ad *AudioDevice) DeserializeAudioMsg(data []byte) error {
 		}
 
 		var resampledAudio []float32
+		var err error
 
 		// if necessary, resample the audio
 		if samplingrate != ad.Samplingrate {

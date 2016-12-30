@@ -10,15 +10,14 @@ import (
 // audio packets
 type serializer struct {
 	*AudioDevice
-	opusEncoder        *opus.Encoder
-	opusBuffer         []byte
-	wireSamplingrate   float64
-	wireOutputChannels int
-	framesPerBufferI   int32 // framesPerBuffer
-	samplingRateI      int32 // samplingRate
-	channelsI          int32 // output channels
-	bitrateI           int32 // bitrate
-	userID             string
+	samplingrate    float64
+	opusEncoder     *opus.Encoder
+	opusBuffer      []byte
+	opusBitrate     int
+	pcmBufferSize   int32 // framesPerBuffer as int32
+	pcmSamplingrate int32 // samplingRate as int32
+	pcmChannels     int32 // output channels as int32
+	pcmBitDepth     int32 // bitrate as int32
 }
 
 func (s *serializer) SerializeOpusAudioMsg(in []float32) ([]byte, error) {
@@ -31,10 +30,6 @@ func (s *serializer) SerializeOpusAudioMsg(in []float32) ([]byte, error) {
 	msg := sbAudioDataPool.Get().(*sbAudio.AudioData)
 	defer sbAudioDataPool.Put(msg)
 
-	msg.Channels = s.channelsI
-	msg.FrameLength = s.framesPerBufferI
-	msg.SamplingRate = s.samplingRateI
-	msg.Bitrate = s.bitrateI
 	msg.AudioRaw = s.opusBuffer[:length]
 	msg.Codec = sbAudio.Codec_OPUS
 
@@ -49,14 +44,15 @@ func (s *serializer) SerializeOpusAudioMsg(in []float32) ([]byte, error) {
 // SerializeAudioMsg serializes audio frames in a protocol buffers with the
 // corresponding meta data. The amount of audio channels and sampingrate can
 // be specified.
-func (s *serializer) SerializeAudioMsg(in []float32) ([]byte, error) {
+func (s *serializer) SerializePCMAudioMsg(in []float32) ([]byte, error) {
 
 	var resampledAudio []float32
 	var audioToWire []int32
 
 	// if necessary resample the audio and / or adjust the channels
-	if (s.wireSamplingrate != s.Samplingrate) || (s.wireOutputChannels != s.Channels) {
-		ratio := s.wireSamplingrate / s.Samplingrate // output samplerate / input samplerate
+	if (s.pcmSamplingrate != int32(s.Samplingrate)) ||
+		(s.pcmChannels != int32(s.Channels)) {
+		ratio := float64(s.pcmSamplingrate) / s.Samplingrate // output samplerate / input samplerate
 		var err error
 		// cases: device MONO & output MONO  and device STEREO & output STEREO
 		resampledAudio, err = s.Converter.Process(in, ratio, false)
@@ -65,14 +61,14 @@ func (s *serializer) SerializeAudioMsg(in []float32) ([]byte, error) {
 		}
 
 		// audio device is STEREO but over the wire we want MONO
-		if s.channelsI == MONO && s.Channels == STEREO {
+		if s.pcmChannels == MONO && s.Channels == STEREO {
 			reduced := make([]float32, 0, len(resampledAudio)/2)
 			// chop of the right channel
 			for i := 0; i < len(resampledAudio); i += 2 {
 				reduced = append(reduced, resampledAudio[i])
 			}
 			resampledAudio = reduced
-		} else if s.channelsI == STEREO && s.Channels == MONO {
+		} else if s.pcmChannels == STEREO && s.Channels == MONO {
 			// audio device is MONO but over the wire we want STEREO
 			// doesn't make much sense
 			expanded := make([]float32, 0, len(resampledAudio)*2)
@@ -89,22 +85,23 @@ func (s *serializer) SerializeAudioMsg(in []float32) ([]byte, error) {
 	if len(resampledAudio) > 0 { // in case we had to resample
 		audioToWire = make([]int32, 0, len(resampledAudio))
 		for _, sample := range resampledAudio {
-			audioToWire = append(audioToWire, int32(sample*bitMapToInt32[s.bitrateI]))
+			audioToWire = append(audioToWire, int32(sample*bitMapToInt32[s.pcmBitDepth]))
 		}
 	} else { // otherwise just take the data from the sound card buffer
 		audioToWire = make([]int32, 0, len(in))
 		for _, sample := range in {
-			audioToWire = append(audioToWire, int32(sample*bitMapToInt32[s.bitrateI]))
+			audioToWire = append(audioToWire, int32(sample*bitMapToInt32[s.pcmBitDepth]))
 		}
 	}
 
 	msg := sbAudioDataPool.Get().(*sbAudio.AudioData)
 	defer sbAudioDataPool.Put(msg)
 
-	msg.Channels = s.channelsI
-	msg.FrameLength = s.framesPerBufferI
-	msg.SamplingRate = s.samplingRateI
-	msg.Bitrate = s.bitrateI
+	msg.Channels = s.pcmChannels
+	msg.FrameLength = s.pcmBufferSize
+	msg.SamplingRate = s.pcmSamplingrate
+	msg.BitDepth = s.pcmBitDepth
+	msg.Codec = sbAudio.Codec_PCM
 	msg.AudioPacked = audioToWire
 
 	data, err := proto.Marshal(msg)
