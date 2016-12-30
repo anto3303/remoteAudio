@@ -27,15 +27,20 @@ func (s *serializer) SerializeOpusAudioMsg(in []float32) ([]byte, error) {
 		return nil, err
 	}
 
-	msg := sbAudioDataPool.Get().(*sbAudio.AudioData)
-	defer sbAudioDataPool.Put(msg)
+	// msg := sbAudioDataPool.Get().(*sbAudio.AudioData)
+	// defer sbAudioDataPool.Put(msg)
 
-	msg.AudioRaw = s.opusBuffer[:length]
-	msg.Codec = sbAudio.Codec_OPUS
+	// msg.AudioRaw = s.opusBuffer[:length]
+	// msg.Codec = sbAudio.Codec_OPUS
 
-	data, err := proto.Marshal(msg)
-	if err != nil {
-		return nil, err
+	// data, err := proto.Marshal(msg)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	data := make([]byte, length)
+	for i := 0; i < length; i++ {
+		data[i] = s.opusBuffer[i]
 	}
 
 	return data, nil

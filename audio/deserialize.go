@@ -5,7 +5,6 @@ import (
 
 	"github.com/dh1tw/opus"
 	sbAudio "github.com/dh1tw/remoteAudio/sb_audio"
-	"github.com/gogo/protobuf/proto"
 )
 
 type deserializer struct {
@@ -15,25 +14,32 @@ type deserializer struct {
 }
 
 func (d *deserializer) DeserializeAudioMsg(data []byte) error {
-	msg := sbAudioDataPool.Get().(*sbAudio.AudioData)
-	defer sbAudioDataPool.Put(msg)
+	// msg := sbAudioDataPool.Get().(*sbAudio.AudioData)
+	// defer sbAudioDataPool.Put(msg)
 
-	err := proto.Unmarshal(data, msg)
+	// err := proto.Unmarshal(data, msg)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// if msg.Codec == sbAudio.Codec_OPUS {
+	// 	err := d.DeserializeOpusAudioMsg(msg)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// } else if msg.Codec == sbAudio.Codec_PCM {
+	// 	err := d.DeserializePCMAudioMsg(msg)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
+	len, err := d.opusDecoder.DecodeFloat32(data, d.opusBuffer)
 	if err != nil {
 		return err
 	}
 
-	if msg.Codec == sbAudio.Codec_OPUS {
-		err := d.DeserializeOpusAudioMsg(msg)
-		if err != nil {
-			return err
-		}
-	} else if msg.Codec == sbAudio.Codec_PCM {
-		err := d.DeserializePCMAudioMsg(msg)
-		if err != nil {
-			return err
-		}
-	}
+	d.out = d.opusBuffer[:len*d.Channels]
+
 	return nil
 }
 
