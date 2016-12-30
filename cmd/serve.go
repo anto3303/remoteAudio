@@ -52,10 +52,10 @@ func init() {
 	serveCmd.PersistentFlags().Duration("output_device_latency", time.Millisecond*5, "Output latency")
 	serveCmd.PersistentFlags().String("output_device_channels", "stereo", "Output Channels")
 
-	serveCmd.PersistentFlags().Float64("pcm_samplingrate", 16000, "sampling rate on the wire")
-	serveCmd.PersistentFlags().Int("pcm_bitdepth", 16, "Bitrate used on the wire")
-	serveCmd.PersistentFlags().String("pcm_channels", "stereo", "Audio Channels send over the wire")
-	serveCmd.PersistentFlags().Int("pcm_resampling_quality", 1, "Resampling quality")
+	serveCmd.PersistentFlags().Float64("pcm_samplingrate", 16000, "pcm sampling")
+	serveCmd.PersistentFlags().Int("pcm_bitdepth", 16, "pcm audio bit depth")
+	serveCmd.PersistentFlags().String("pcm_channels", "stereo", "pcm audio Channels")
+	serveCmd.PersistentFlags().Int("pcm_resampling_quality", 1, "pcm resampling quality")
 
 	serveCmd.PersistentFlags().String("opus_application", "restricted_lowdelay", "profile for opus encoder")
 	serveCmd.PersistentFlags().Int("opus_bitrate", 32000, "Bitrate which generates the opus encoder")

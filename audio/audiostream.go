@@ -101,11 +101,11 @@ func GetChannel(ch string) int {
 func GetOpusApplication(app string) (int, error) {
 	switch app {
 	case "audio":
-		return opus.APPLICATION_AUDIO, nil
+		return opus.AppAudio, nil
 	case "restricted_lowdelay":
-		return opus.APPLICATION_RESTRICTED_LOWDELAY, nil
+		return opus.AppRestrictedLowdelay, nil
 	case "voip":
-		return opus.APPLICATION_VOIP, nil
+		return opus.AppVoIP, nil
 	}
 	return 0, errors.New("unknown opus application value")
 }
@@ -115,15 +115,15 @@ func GetOpusApplication(app string) (int, error) {
 func GetOpusMaxBandwith(maxBw string) (int, error) {
 	switch strings.ToLower(maxBw) {
 	case "narrowband":
-		return opus.OPUS_BANDWIDTH_NARROWBAND, nil
+		return opus.BandwidthNarrowband, nil
 	case "mediumband":
-		return opus.OPUS_BANDWIDTH_MEDIUMBAND, nil
+		return opus.BandwidthMediumBand, nil
 	case "wideband":
-		return opus.OPUS_BANDWIDTH_WIDEBAND, nil
+		return opus.BandwidthWideBand, nil
 	case "superwideband":
-		return opus.OPUS_BANDWIDTH_SUPERWIDEBAND, nil
+		return opus.BandwidthSuperWideBand, nil
 	case "fullband":
-		return opus.OPUS_BANDWIDTH_FULLBAND, nil
+		return opus.BandwidthFullband, nil
 	}
 
 	return 0, errors.New("unknown opus max bandwidth value")
