@@ -101,8 +101,8 @@ func PlayerSync(ad AudioDevice) {
 
 	for {
 		select {
-		case <-ad.EventCh:
-			// TBD
+		// case <-ad.EventChs.RxAudioOn:
+		// 	// TBD
 		case msg := <-ad.ToDeserialize:
 			r.Enqueue(msg.Data)
 		default:

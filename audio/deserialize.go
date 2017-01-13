@@ -23,20 +23,22 @@ func (d *deserializer) DeserializeAudioMsg(data []byte) error {
 		return err
 	}
 
-	if msg.Codec == sbAudio.Codec_OPUS {
-		err := d.DeserializeOpusAudioMsg(msg)
-		if err != nil {
-			return err
-		}
-	} else if msg.Codec == sbAudio.Codec_PCM {
-		err := d.DeserializePCMAudioMsg(msg)
-		if err != nil {
-			return err
-		}
+	switch msg.GetCodec() {
+	case sbAudio.Codec_OPUS:
+		err = d.DeserializeOpusAudioMsg(msg)
+	case sbAudio.Codec_PCM:
+		err = d.DeserializePCMAudioMsg(msg)
+	default:
+		return errors.New("unknown Audio Codec")
+	}
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
+// DeserializeOpusAudioMsg deserializes a byte array containing an opus
+// encoded audio frame.
 func (d *deserializer) DeserializeOpusAudioMsg(msg *sbAudio.AudioData) error {
 
 	len, err := d.opusDecoder.DecodeFloat32(msg.GetAudioRaw(), d.opusBuffer)
@@ -49,27 +51,27 @@ func (d *deserializer) DeserializeOpusAudioMsg(msg *sbAudio.AudioData) error {
 	return nil
 }
 
-// DeserializeAudioMsg deserializes protocol buffers containing audio frames with
-// the corresponding meta data. In case the Audio channels and / or Samplerate
-// doesn't match with the hosts values, both will be converted to match.
+// DeserializePCMAudioMsg deserializes protocol buffers containing a PCM audio
+// frame with the corresponding meta data. In case the Audio channels and / or
+// Samplerate doesn't match with the hosts sound card, both will be converted to
+// match.
 func (ad *AudioDevice) DeserializePCMAudioMsg(msg *sbAudio.AudioData) error {
 
 	var samplingrate float64
 	var channels, bitdepth int
 
 	channels = int(msg.GetChannels())
-	if channels == 0 {
+	if channels < 1 || channels > 2 {
 		return errors.New("invalid amount of channels")
 	}
 
 	samplingrate = float64(msg.GetSamplingRate())
-	if samplingrate == 0 {
+	if samplingrate <= 0 || samplingrate > 96000 {
 		return errors.New("invalid samplerate")
 	}
 
-	// only accept 8, 12, 16 or 32 bit streams
 	bitdepth = int(msg.GetBitDepth())
-
+	// only accept 8, 12, 16 or 32 bit streams
 	if bitdepth != 8 && bitdepth != 12 && bitdepth != 16 && bitdepth != 32 {
 		return errors.New("incompatible audio bit depth")
 	}
@@ -84,45 +86,44 @@ func (ad *AudioDevice) DeserializePCMAudioMsg(msg *sbAudio.AudioData) error {
 		convertedAudio = append(convertedAudio, float32(sample)/bitMapToFloat32[bitdepth])
 	}
 
-	if msg.Codec == sbAudio.Codec_PCM {
-		// if necessary, adjust the channels
-		if channels != ad.Channels {
+	// if necessary, adjust the channels to the local audio device channels
+	if channels != ad.Channels {
 
-			// audio device is STEREO but we received MONO
-			if channels == MONO && ad.Channels == STEREO {
-				expanded := make([]float32, 0, len(convertedAudio)*2)
-				// left channel = right channel
-				for _, sample := range convertedAudio {
-					expanded = append(expanded, sample)
-					expanded = append(expanded, sample)
-				}
-				convertedAudio = expanded
-
-			} else if channels == STEREO && ad.Channels == MONO {
-				// audio device is MONO but we received STEREO
-				reduced := make([]float32, 0, len(convertedAudio)/2)
-				// chop of the right channel
-				for i := 0; i < len(convertedAudio); i += 2 {
-					reduced = append(reduced, convertedAudio[i])
-				}
-				convertedAudio = reduced
+		// case: local audio device is STEREO but we received MONO frame
+		if channels == MONO && ad.Channels == STEREO {
+			expanded := make([]float32, 0, len(convertedAudio)*2)
+			// left channel = right channel
+			for _, sample := range convertedAudio {
+				expanded = append(expanded, sample)
+				expanded = append(expanded, sample)
 			}
-		}
+			convertedAudio = expanded
 
-		var resampledAudio []float32
-		var err error
-
-		// if necessary, resample the audio
-		if samplingrate != ad.Samplingrate {
-			ratio := ad.Samplingrate / samplingrate // output samplerate / input samplerate
-			resampledAudio, err = ad.Converter.Process(convertedAudio, ratio, false)
-			if err != nil {
-				return err
+			// case: local audio device is MONO but we received a STEREO frame
+		} else if channels == STEREO && ad.Channels == MONO {
+			reduced := make([]float32, 0, len(convertedAudio)/2)
+			// chop off the right channel
+			for i := 0; i < len(convertedAudio); i += 2 {
+				reduced = append(reduced, convertedAudio[i])
 			}
-			ad.out = resampledAudio
-		} else {
-			ad.out = convertedAudio
+			convertedAudio = reduced
 		}
 	}
+
+	var resampledAudio []float32
+	var err error
+
+	// if necessary, resample the audio
+	if samplingrate != ad.Samplingrate {
+		ratio := ad.Samplingrate / samplingrate // output samplerate / input samplerate
+		resampledAudio, err = ad.Converter.Process(convertedAudio, ratio, false)
+		if err != nil {
+			return err
+		}
+		ad.out = resampledAudio
+	} else {
+		ad.out = convertedAudio
+	}
+
 	return nil
 }

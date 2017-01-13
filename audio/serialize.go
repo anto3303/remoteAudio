@@ -30,8 +30,10 @@ func (s *serializer) SerializeOpusAudioMsg(in []float32) ([]byte, error) {
 	msg := sbAudioDataPool.Get().(*sbAudio.AudioData)
 	defer sbAudioDataPool.Put(msg)
 
+	codec := sbAudio.Codec_OPUS
+
 	msg.AudioRaw = s.opusBuffer[:length]
-	msg.Codec = sbAudio.Codec_OPUS
+	msg.Codec = &codec
 
 	data, err := proto.Marshal(msg)
 	if err != nil {
@@ -97,11 +99,13 @@ func (s *serializer) SerializePCMAudioMsg(in []float32) ([]byte, error) {
 	msg := sbAudioDataPool.Get().(*sbAudio.AudioData)
 	defer sbAudioDataPool.Put(msg)
 
-	msg.Channels = s.pcmChannels
-	msg.FrameLength = s.pcmBufferSize
-	msg.SamplingRate = s.pcmSamplingrate
-	msg.BitDepth = s.pcmBitDepth
-	msg.Codec = sbAudio.Codec_PCM
+	codec := sbAudio.Codec_PCM
+
+	msg.Channels = &s.pcmChannels
+	msg.FrameLength = &s.pcmBufferSize
+	msg.SamplingRate = &s.pcmSamplingrate
+	msg.BitDepth = &s.pcmBitDepth
+	msg.Codec = &codec
 	msg.AudioPacked = audioToWire
 
 	data, err := proto.Marshal(msg)

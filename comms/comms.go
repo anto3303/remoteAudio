@@ -3,6 +3,7 @@ package comms
 import (
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/cskr/pubsub"
@@ -11,15 +12,17 @@ import (
 )
 
 type MqttSettings struct {
-	Transport         string
-	BrokerURL         string
-	BrokerPort        int
-	ClientID          string
-	Topics            []string
-	FromWire          chan audio.AudioMsg
-	ToWire            chan audio.AudioMsg
-	ConnStatus        pubsub.PubSub
-	InputBufferLength int
+	Transport                string
+	BrokerURL                string
+	BrokerPort               int
+	ClientID                 string
+	Topics                   []string
+	ToDeserializeAudioDataCh chan audio.AudioMsg
+	ToDeserializeAudioReqCh  chan audio.AudioMsg
+	ToWire                   chan audio.AudioMsg
+	TxUserTopic              chan interface{}
+	ConnStatus               pubsub.PubSub
+	InputBufferLength        int
 }
 
 const (
@@ -32,7 +35,7 @@ const (
 )
 
 type ConnectionStatus struct {
-	status int
+	Status int
 }
 
 func MqttClient(s MqttSettings) {
@@ -44,18 +47,18 @@ func MqttClient(s MqttSettings) {
 
 	var msgHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 
-		audioMsg := audio.AudioMsg{
-			Topic: msg.Topic(),
-			Data:  msg.Payload()[:len(msg.Payload())],
+		if strings.Contains(msg.Topic(), "audio_data") {
+			audioMsg := audio.AudioMsg{
+				Topic: msg.Topic(),
+				Data:  msg.Payload()[:len(msg.Payload())],
+			}
+			s.ToDeserializeAudioDataCh <- audioMsg
+		} else if strings.Contains(msg.Topic(), "request") {
+			audioReqMsg := audio.AudioMsg{
+				Data: msg.Payload()[:len(msg.Payload())],
+			}
+			s.ToDeserializeAudioReqCh <- audioReqMsg
 		}
-
-		s.FromWire <- audioMsg
-
-		// if len(s.FromWire) < s.InputBufferLength {
-		// 	s.FromWire <- audioMsg
-		// } else {
-		// 	log.Println("mqtt buffer overflow")
-		// }
 	}
 
 	var connectionLostHandler = func(client mqtt.Client, err error) {
@@ -73,7 +76,7 @@ func MqttClient(s MqttSettings) {
 		for _, topic := range s.Topics {
 			if token := client.Subscribe(topic, 0, nil); token.Wait() &&
 				token.Error() != nil {
-				log.Println(token.Error)
+				log.Println(token.Error())
 			}
 		}
 		status := ConnectionStatus{CONNECTED}
@@ -96,12 +99,26 @@ func MqttClient(s MqttSettings) {
 		log.Println(token.Error())
 	}
 
+	txUserTopic := ""
+
 	for {
 		select {
 		case msg := <-s.ToWire:
 			token := client.Publish(msg.Topic, 0, false, msg.Data)
 			token.Wait()
+		case msg := <-s.TxUserTopic:
+			if client.IsConnected() {
+				if len(txUserTopic) != 0 {
+					if token := client.Unsubscribe(txUserTopic); token.Wait() && token.Error() != nil {
+						log.Println(token.Error())
+					}
+					txUserTopic = msg.(string)
+					token := client.Subscribe(txUserTopic, 0, nil)
+					if token.Wait() && token.Error() != nil {
+						log.Println(token.Error())
+					}
+				}
+			}
 		}
 	}
-	log.Println("shouldn't be here")
 }

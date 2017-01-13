@@ -9,15 +9,17 @@ import (
 )
 
 const (
-	EVENTS = "events"
+	RxAudioOn   = "RxAudioOn"
+	TxUserTopic = "TxUserTopic"
 )
-
-type Event struct {
-	SendAudio bool
-}
 
 type EventsConf struct {
 	EventsPubSub *pubsub.PubSub
+}
+
+type EventChs struct {
+	RxAudioOn   chan interface{} // bool
+	TxUserTopic chan interface{} // string
 }
 
 func CaptureKeyboard(conf EventsConf) {
@@ -29,9 +31,7 @@ func CaptureKeyboard(conf EventsConf) {
 		if scanner.Scan() {
 			if scanner.Text() == "p" {
 				ptt = !ptt
-				ev := Event{}
-				ev.SendAudio = ptt
-				conf.EventsPubSub.Pub(ev, EVENTS)
+				conf.EventsPubSub.Pub(true, RxAudioOn)
 				fmt.Println("keyboard - ptt:", ptt)
 			} else {
 				fmt.Println("keyboard input:", scanner.Text())

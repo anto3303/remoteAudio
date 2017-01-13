@@ -29,38 +29,41 @@ import (
 	"github.com/dh1tw/remoteAudio/audio"
 	"github.com/dh1tw/remoteAudio/comms"
 	"github.com/dh1tw/remoteAudio/events"
+	"github.com/gogo/protobuf/proto"
 	"github.com/gordonklaus/portaudio"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	_ "net/http/pprof"
+
+	sbAudio "github.com/dh1tw/remoteAudio/sb_audio"
 )
 
-// mqttCmd represents the mqtt command
-var mqttCmd = &cobra.Command{
+// connectMqttCmd represents the mqtt command
+var connectMqttCmd = &cobra.Command{
 	Use:   "mqtt",
-	Short: "Stream Audio via MQTT",
-	Long:  `Stream Audio via MQTT`,
+	Short: "Client streaming Audio via MQTT",
+	Long:  `Client streaming Audio via MQTT`,
 	Run: func(cmd *cobra.Command, args []string) {
-		audioClient()
+		mqttAudioClient()
 	},
 }
 
 func init() {
-	serveCmd.AddCommand(mqttCmd)
-	mqttCmd.PersistentFlags().StringP("broker_url", "u", "localhost", "Broker URL")
-	mqttCmd.PersistentFlags().StringP("client_id", "c", "", "MQTT Client Id")
-	mqttCmd.PersistentFlags().IntP("broker_port", "p", 1883, "Broker Port")
-	mqttCmd.PersistentFlags().StringP("topic_audio_out", "O", "station/radios/myradio/audio/out", "Topic where outgoing audio is published")
-	mqttCmd.PersistentFlags().StringP("topic_audio_in", "I", "station/radios/myradio/audio/in", "Topic for incoming audio")
-	viper.BindPFlag("mqtt.broker_url", mqttCmd.PersistentFlags().Lookup("broker_url"))
-	viper.BindPFlag("mqtt.broker_port", mqttCmd.PersistentFlags().Lookup("broker_port"))
-	viper.BindPFlag("mqtt.client_id", mqttCmd.PersistentFlags().Lookup("client_id"))
-	viper.BindPFlag("mqtt.topic_audio_out", mqttCmd.PersistentFlags().Lookup("topic_audio_out"))
-	viper.BindPFlag("mqtt.topic_audio_in", mqttCmd.PersistentFlags().Lookup("topic_audio_in"))
+	connectCmd.AddCommand(connectMqttCmd)
+	connectMqttCmd.PersistentFlags().StringP("broker_url", "u", "localhost", "Broker URL")
+	connectMqttCmd.PersistentFlags().StringP("client_id", "c", "", "MQTT Client Id")
+	connectMqttCmd.PersistentFlags().IntP("broker_port", "p", 1883, "Broker Port")
+	connectMqttCmd.PersistentFlags().StringP("station", "X", "mystation", "Your station callsign")
+	connectMqttCmd.PersistentFlags().StringP("radio", "Y", "myradio", "Radio ID")
+	viper.BindPFlag("mqtt.broker_url", connectMqttCmd.PersistentFlags().Lookup("broker_url"))
+	viper.BindPFlag("mqtt.broker_port", connectMqttCmd.PersistentFlags().Lookup("broker_port"))
+	viper.BindPFlag("mqtt.client_id", connectMqttCmd.PersistentFlags().Lookup("client_id"))
+	viper.BindPFlag("mqtt.station", connectMqttCmd.PersistentFlags().Lookup("station"))
+	viper.BindPFlag("mqtt.radio", connectMqttCmd.PersistentFlags().Lookup("radio"))
 }
 
-func audioClient() {
+func mqttAudioClient() {
 
 	// defer profile.Start(profile.MemProfile, profile.ProfilePath(".")).Stop()
 	// defer profile.Start(profile.CPUProfile, profile.ProfilePath(".")).Stop()
@@ -77,7 +80,18 @@ func audioClient() {
 	mqttBrokerURL := viper.GetString("mqtt.broker_url")
 	mqttBrokerPort := viper.GetInt("mqtt.broker_port")
 	mqttClientID := viper.GetString("mqtt.client_id")
-	mqttTopics := []string{viper.GetString("mqtt.topic_audio_in")}
+
+	serverBaseTopic := viper.GetString("mqtt.station") +
+		"/radios/" + viper.GetString("mqtt.radio") +
+		"audio"
+
+	serverRequestTopic := serverBaseTopic + "/request"
+	serverResponseTopic := serverBaseTopic + "/response"
+
+	// errorTopic := baseTopic + "/error"
+	serverAudioTopic := serverBaseTopic + "/audio_data"
+
+	mqttTopics := []string{serverResponseTopic, serverAudioTopic}
 
 	audioFrameLength := viper.GetInt("audio.frame_length")
 	rxBufferLength := viper.GetInt("audio.rx_buffer_length")
@@ -97,30 +111,33 @@ func audioClient() {
 	connStatus := pubsub.New(1)
 
 	toWireCh := make(chan audio.AudioMsg, 20)
-	toSerializeCh := make(chan audio.AudioMsg, 20)
-	toDeserializeCh := make(chan audio.AudioMsg, rxBufferLength)
-	audioLoopbackCh := make(chan audio.AudioMsg)
+	toSerializeAudioDataCh := make(chan audio.AudioMsg, 20)
+	toDeserializeAudioDataCh := make(chan audio.AudioMsg, rxBufferLength)
+	toDeserializeAudioReqCh := make(chan audio.AudioMsg, 10)
 
 	evPS := pubsub.New(1)
 
 	settings := comms.MqttSettings{
-		Transport:         "tcp",
-		BrokerURL:         mqttBrokerURL,
-		BrokerPort:        mqttBrokerPort,
-		ClientID:          mqttClientID,
-		Topics:            mqttTopics,
-		FromWire:          toDeserializeCh,
-		ToWire:            toWireCh,
-		ConnStatus:        *connStatus,
-		InputBufferLength: rxBufferLength,
+		Transport:  "tcp",
+		BrokerURL:  mqttBrokerURL,
+		BrokerPort: mqttBrokerPort,
+		ClientID:   mqttClientID,
+		Topics:     mqttTopics,
+		ToDeserializeAudioDataCh: toDeserializeAudioDataCh,
+		ToDeserializeAudioReqCh:  toDeserializeAudioReqCh,
+		ToWire:                   toWireCh,
+		TxUserTopic:              evPS.Sub(events.TxUserTopic),
+		ConnStatus:               *connStatus,
+		InputBufferLength:        rxBufferLength,
 	}
 
 	player := audio.AudioDevice{
-		ToWire:          nil,
-		ToSerialize:     nil,
-		ToDeserialize:   toDeserializeCh,
-		AudioLoopbackCh: audioLoopbackCh,
-		EventCh:         evPS.Sub(events.EVENTS),
+		ToWire:        nil,
+		ToSerialize:   nil,
+		ToDeserialize: toDeserializeAudioDataCh,
+		EventChs: events.EventChs{
+			RxAudioOn: nil,
+		},
 		AudioStream: audio.AudioStream{
 			DeviceName:      outputDeviceDeviceName,
 			FramesPerBuffer: audioFrameLength,
@@ -131,11 +148,12 @@ func audioClient() {
 	}
 
 	recorder := audio.AudioDevice{
-		ToWire:          toWireCh,
-		ToSerialize:     toSerializeCh,
-		ToDeserialize:   nil,
-		AudioLoopbackCh: audioLoopbackCh,
-		EventCh:         evPS.Sub(events.EVENTS),
+		ToWire:        toWireCh,
+		ToSerialize:   toSerializeAudioDataCh,
+		ToDeserialize: nil,
+		EventChs: events.EventChs{
+			RxAudioOn: evPS.Sub(events.RxAudioOn),
+		},
 		AudioStream: audio.AudioStream{
 			DeviceName:      inputDeviceDeviceName,
 			FramesPerBuffer: audioFrameLength,
@@ -157,13 +175,46 @@ func audioClient() {
 	go events.CaptureKeyboard(eventsConf)
 
 	connectionStatusCh := connStatus.Sub(comms.CONNSTATUSTOPIC)
-	eventsCh := evPS.Sub(events.EVENTS)
 
 	for {
 		select {
-		case status := <-connectionStatusCh:
-			fmt.Println(status)
-		case <-eventsCh:
+		case msg := <-connectionStatusCh:
+			s := msg.(comms.ConnectionStatus)
+
+			if s.Status == comms.CONNECTED {
+				req := sbAudio.ClientRequest{}
+				on := true
+				req.RxAudioOn = &on
+				m, err := req.Marshal()
+				if err != nil {
+					fmt.Println(err)
+				} else {
+					wireMsg := audio.AudioMsg{
+						Topic: serverRequestTopic,
+						Data:  m,
+					}
+					toWireCh <- wireMsg
+				}
+			}
+
+		case data := <-toDeserializeAudioReqCh:
+
+			msg := sbAudio.ClientRequest{}
+
+			err := proto.Unmarshal(data.Data, &msg)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			if msg.RxAudioOn != nil {
+				rxAudioOn := msg.GetRxAudioOn()
+				evPS.Pub(rxAudioOn, events.RxAudioOn)
+			}
+
+			if msg.TxUserTopic != nil {
+				txUserTopic := msg.GetTxUserTopic()
+				evPS.Pub(txUserTopic, events.TxUserTopic)
+			}
 		}
 	}
 }

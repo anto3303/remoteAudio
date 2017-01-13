@@ -5,7 +5,6 @@ import (
 
 	"github.com/dh1tw/gosamplerate"
 	"github.com/dh1tw/opus"
-	"github.com/dh1tw/remoteAudio/events"
 	"github.com/gordonklaus/portaudio"
 	"github.com/spf13/viper"
 )
@@ -133,26 +132,30 @@ func RecorderAsync(ad AudioDevice) {
 		return
 	}
 
-	mqttTopicAudioOut := viper.GetString("mqtt.topic_audio_out")
+	baseTopic := viper.GetString("mqtt.station") +
+		"/radios/" + viper.GetString("mqtt.radio") +
+		"audio"
+
+	mqttTopicAudioOut := baseTopic + "/audio_data"
 
 	for {
 		select {
-		case msg := <-ad.EventCh:
-			ev := msg.(events.Event)
-			if ev.SendAudio {
-				stream.Start()
-			} else if !ev.SendAudio {
-				stream.Stop()
+		case msg := <-ad.EventChs.RxAudioOn:
+			rxAudioOn := msg.(bool)
+			if rxAudioOn {
+				err = stream.Start()
+			} else {
+				err = stream.Stop()
+			}
+			if err != nil {
+				fmt.Println(err)
 			}
 		case msg := <-ad.ToSerialize:
-			// if ptt {
-			// serialize the Audio data and send to for
-			// transmission to the comms coroutine
 			var data []byte
 			var err error
 			if codec == OPUS {
 				data, err = s.SerializeOpusAudioMsg(msg.Raw)
-			} else if codec == PCM {
+			} else {
 				data, err = s.SerializePCMAudioMsg(msg.Raw)
 			}
 			if err != nil {

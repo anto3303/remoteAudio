@@ -9,6 +9,7 @@ import (
 
 	"github.com/dh1tw/gosamplerate"
 	"github.com/dh1tw/opus"
+	"github.com/dh1tw/remoteAudio/events"
 	sbAudio "github.com/dh1tw/remoteAudio/sb_audio"
 	"github.com/gordonklaus/portaudio"
 )
@@ -67,11 +68,10 @@ type AudioMsg struct {
 // AudioDevice contains the configuration for an Audio Device
 type AudioDevice struct {
 	AudioStream
-	ToSerialize     chan AudioMsg
-	ToWire          chan AudioMsg
-	ToDeserialize   chan AudioMsg
-	AudioLoopbackCh chan AudioMsg
-	EventCh         chan interface{}
+	ToSerialize   chan AudioMsg
+	ToWire        chan AudioMsg
+	ToDeserialize chan AudioMsg
+	EventChs      events.EventChs
 }
 
 // IdentifyDevice checks if the Audio Devices actually exist
