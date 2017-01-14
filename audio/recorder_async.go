@@ -2,6 +2,7 @@ package audio
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/dh1tw/gosamplerate"
 	"github.com/dh1tw/opus"
@@ -51,8 +52,15 @@ func RecorderAsync(ad AudioDevice) {
 
 	var stream *portaudio.Stream
 
+	userID := viper.GetString("user.id")
+	if userID == "" {
+		fmt.Println("No User ID set")
+		os.Exit(-1)
+	}
+
 	var s serializer
 	s.AudioDevice = &ad
+	s.userID = userID
 	s.pcmSamplingrate = int32(viper.GetFloat64("pcm.samplingrate"))
 	s.pcmBufferSize = int32(ad.FramesPerBuffer)
 	s.pcmChannels = int32(GetChannel(viper.GetString("pcm.channels")))
@@ -132,12 +140,6 @@ func RecorderAsync(ad AudioDevice) {
 		return
 	}
 
-	baseTopic := viper.GetString("mqtt.station") +
-		"/radios/" + viper.GetString("mqtt.radio") +
-		"audio"
-
-	mqttTopicAudioOut := baseTopic + "/audio_data"
-
 	for {
 		select {
 		case msg := <-ad.EventChs.RxAudioOn:
@@ -162,7 +164,7 @@ func RecorderAsync(ad AudioDevice) {
 				fmt.Println(err)
 			} else {
 				msg := AudioMsg{}
-				msg.Topic = mqttTopicAudioOut
+				msg.Topic = ad.AudioToWireTopic
 				msg.Data = data
 				ad.ToWire <- msg
 			}

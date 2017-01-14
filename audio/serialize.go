@@ -10,6 +10,7 @@ import (
 // audio packets
 type serializer struct {
 	*AudioDevice
+	userID          string
 	samplingrate    float64
 	opusEncoder     *opus.Encoder
 	opusBuffer      []byte
@@ -34,6 +35,7 @@ func (s *serializer) SerializeOpusAudioMsg(in []float32) ([]byte, error) {
 
 	msg.AudioRaw = s.opusBuffer[:length]
 	msg.Codec = &codec
+	msg.UserId = &s.userID
 
 	data, err := proto.Marshal(msg)
 	if err != nil {
@@ -107,6 +109,7 @@ func (s *serializer) SerializePCMAudioMsg(in []float32) ([]byte, error) {
 	msg.BitDepth = &s.pcmBitDepth
 	msg.Codec = &codec
 	msg.AudioPacked = audioToWire
+	msg.UserId = &s.userID
 
 	data, err := proto.Marshal(msg)
 	if err != nil {

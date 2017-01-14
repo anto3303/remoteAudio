@@ -2,6 +2,9 @@ package audio
 
 import (
 	"errors"
+	"fmt"
+	"sync"
+	"time"
 
 	"github.com/dh1tw/opus"
 	sbAudio "github.com/dh1tw/remoteAudio/sb_audio"
@@ -12,6 +15,9 @@ type deserializer struct {
 	*AudioDevice
 	opusDecoder *opus.Decoder
 	opusBuffer  []float32
+	muTx        sync.Mutex
+	txUser      string
+	txTimestamp time.Time
 }
 
 func (d *deserializer) DeserializeAudioMsg(data []byte) error {
@@ -21,6 +27,24 @@ func (d *deserializer) DeserializeAudioMsg(data []byte) error {
 	err := proto.Unmarshal(data, msg)
 	if err != nil {
 		return err
+	}
+
+	d.muTx.Lock()
+	defer d.muTx.Unlock()
+
+	if time.Since(d.txTimestamp) > time.Second {
+		txUser := msg.GetUserId()
+		switch d.txUser {
+		case "":
+			d.txUser = txUser
+			d.txTimestamp = time.Now()
+		case txUser:
+			d.txTimestamp = time.Now()
+		default: // return because someone else is transmitting
+			errMsg := fmt.Sprintf("%s tries to send; however tx blocked by %s",
+				txUser, d.txUser)
+			return errors.New(errMsg)
+		}
 	}
 
 	switch msg.GetCodec() {

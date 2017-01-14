@@ -80,14 +80,13 @@ func PlayerSync(ad AudioDevice) {
 	}
 
 	defer stream.Stop()
-	// enableLoopback := false
 
 	var d deserializer
 	d.AudioDevice = &ad
+	d.txTimestamp = time.Now()
 
 	opusDecoder, err := opus.NewDecoder(int(ad.Samplingrate), ad.Channels)
-	fmt.Println("opus decoder channels:", ad.Channels)
-	// opusDecoder, err := opus.NewDecoder(int(d.Samplingrate), 2)
+
 	if err != nil || opusDecoder == nil {
 		fmt.Println(err)
 		return
@@ -99,12 +98,22 @@ func PlayerSync(ad AudioDevice) {
 	r := ringBuffer.Ring{}
 	r.SetCapacity(10)
 
+	txTimeoutTicker := time.NewTicker(2 * time.Second)
+
 	for {
 		select {
-		// case <-ad.EventChs.RxAudioOn:
-		// 	// TBD
+
+		// clear the tx user lock if nobody transmitted for the last 2 seconds
+		case <-txTimeoutTicker.C:
+			d.muTx.Lock()
+			if time.Since(d.txTimestamp) > time.Second*2 {
+				d.txUser = ""
+			}
+			d.muTx.Unlock()
+
 		case msg := <-ad.ToDeserialize:
 			r.Enqueue(msg.Data)
+
 		default:
 			data := r.Dequeue()
 			if data != nil {

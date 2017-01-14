@@ -85,12 +85,14 @@ func mqttAudioServer() {
 		"/radios/" + viper.GetString("mqtt.radio") +
 		"audio"
 
-	requestTopic := baseTopic + "/request"
+	serverRequestTopic := baseTopic + "/request"
+	serverAudioOutTopic := baseTopic + "/audio_out"
+	serverAudioInTopic := baseTopic + "/audio_in"
 	// responseTopic := baseTopic + "/response"
 	// errorTopic := baseTopic + "/error"
 	// audioTopic := baseTopic + "/audio_data"
 
-	mqttTopics := []string{requestTopic}
+	mqttTopics := []string{serverRequestTopic, serverAudioInTopic}
 
 	audioFrameLength := viper.GetInt("audio.frame_length")
 	rxBufferLength := viper.GetInt("audio.rx_buffer_length")
@@ -147,9 +149,10 @@ func mqttAudioServer() {
 	}
 
 	recorder := audio.AudioDevice{
-		ToWire:        toWireCh,
-		ToSerialize:   toSerializeAudioDataCh,
-		ToDeserialize: nil,
+		ToWire:           toWireCh,
+		ToSerialize:      toSerializeAudioDataCh,
+		ToDeserialize:    nil,
+		AudioToWireTopic: serverAudioOutTopic,
 		EventChs: events.EventChs{
 			RxAudioOn: evPS.Sub(events.RxAudioOn),
 		},
@@ -191,11 +194,6 @@ func mqttAudioServer() {
 			if msg.RxAudioOn != nil {
 				rxAudioOn := msg.GetRxAudioOn()
 				evPS.Pub(rxAudioOn, events.RxAudioOn)
-			}
-
-			if msg.TxUserTopic != nil {
-				txUserTopic := msg.GetTxUserTopic()
-				evPS.Pub(txUserTopic, events.TxUserTopic)
 			}
 		}
 	}

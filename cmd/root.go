@@ -101,6 +101,8 @@ func init() {
 	RootCmd.PersistentFlags().IntP("rx_buffer_length", "R", 10, "Buffer length (in frames) for incoming Audio packets")
 	RootCmd.PersistentFlags().StringP("codec", "C", "opus", "Audio codec")
 
+	RootCmd.PersistentFlags().StringP("user_id", "U", "", "Your User ID - required for TX")
+
 	viper.BindPFlag("input_device.device_name", RootCmd.PersistentFlags().Lookup("input_device_name"))
 	viper.BindPFlag("input_device.samplingrate", RootCmd.PersistentFlags().Lookup("input_device_sampling_rate"))
 	viper.BindPFlag("input_device.latency", RootCmd.PersistentFlags().Lookup("input_device_latency"))
@@ -126,10 +128,10 @@ func init() {
 	viper.BindPFlag("audio.rx_buffer_length", RootCmd.PersistentFlags().Lookup("rx_buffer_length"))
 	viper.BindPFlag("audio.codec", RootCmd.PersistentFlags().Lookup("codec"))
 
-	if !viper.IsSet("user.user_id") {
-		viper.Set("user.user_id", utils.RandStringRunes(10))
+	if !viper.IsSet("user.id") {
+		viper.Set("user.id", utils.RandStringRunes(10))
 	}
-
+	viper.BindPFlag("user.id", RootCmd.PersistentFlags().Lookup("user_id"))
 }
 
 // initConfig reads in config file and ENV variables if set.

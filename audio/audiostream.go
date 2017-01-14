@@ -68,10 +68,11 @@ type AudioMsg struct {
 // AudioDevice contains the configuration for an Audio Device
 type AudioDevice struct {
 	AudioStream
-	ToSerialize   chan AudioMsg
-	ToWire        chan AudioMsg
-	ToDeserialize chan AudioMsg
-	EventChs      events.EventChs
+	ToSerialize      chan AudioMsg
+	ToWire           chan AudioMsg
+	ToDeserialize    chan AudioMsg
+	AudioToWireTopic string
+	EventChs         events.EventChs
 }
 
 // IdentifyDevice checks if the Audio Devices actually exist

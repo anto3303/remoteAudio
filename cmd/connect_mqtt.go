@@ -89,9 +89,10 @@ func mqttAudioClient() {
 	serverResponseTopic := serverBaseTopic + "/response"
 
 	// errorTopic := baseTopic + "/error"
-	serverAudioTopic := serverBaseTopic + "/audio_data"
+	serverAudioOutTopic := serverBaseTopic + "/audio_out"
+	serverAudioInTopic := serverBaseTopic + "/audio_in"
 
-	mqttTopics := []string{serverResponseTopic, serverAudioTopic}
+	mqttTopics := []string{serverResponseTopic, serverAudioOutTopic}
 
 	audioFrameLength := viper.GetInt("audio.frame_length")
 	rxBufferLength := viper.GetInt("audio.rx_buffer_length")
@@ -133,9 +134,10 @@ func mqttAudioClient() {
 	}
 
 	player := audio.AudioDevice{
-		ToWire:        nil,
-		ToSerialize:   nil,
-		ToDeserialize: toDeserializeAudioDataCh,
+		ToWire:           nil,
+		ToSerialize:      nil,
+		ToDeserialize:    toDeserializeAudioDataCh,
+		AudioToWireTopic: serverAudioInTopic,
 		EventChs: events.EventChs{
 			RxAudioOn: nil,
 		},
@@ -201,7 +203,7 @@ func mqttAudioClient() {
 		// responses coming from server
 		case data := <-toDeserializeAudioRespCh:
 
-			msg := sbAudio.ClientRequest{}
+			msg := sbAudio.ServerResponse{}
 
 			err := proto.Unmarshal(data.Data, &msg)
 			if err != nil {
@@ -210,12 +212,17 @@ func mqttAudioClient() {
 
 			if msg.RxAudioOn != nil {
 				rxAudioOn := msg.GetRxAudioOn()
-				evPS.Pub(rxAudioOn, events.RxAudioOn)
+				fmt.Printf("Server Audio is %t", rxAudioOn)
 			}
 
-			if msg.TxUserTopic != nil {
-				txUserTopic := msg.GetTxUserTopic()
-				evPS.Pub(txUserTopic, events.TxUserTopic)
+			if msg.TxUser != nil {
+				txUser := msg.GetTxUser()
+				fmt.Printf("Server: Current TX User: %s", txUser)
+			}
+
+			if msg.Tx != nil {
+				tx := msg.GetTx()
+				fmt.Printf("Server: TX %t", tx)
 			}
 		}
 	}
