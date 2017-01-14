@@ -83,7 +83,7 @@ func mqttAudioServer() {
 
 	baseTopic := viper.GetString("mqtt.station") +
 		"/radios/" + viper.GetString("mqtt.radio") +
-		"audio"
+		"/audio"
 
 	serverRequestTopic := baseTopic + "/request"
 	serverAudioOutTopic := baseTopic + "/audio_out"
