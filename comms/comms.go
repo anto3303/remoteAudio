@@ -48,7 +48,7 @@ func MqttClient(s MqttSettings) {
 
 	var msgHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 
-		if strings.Contains(msg.Topic(), "audio_data") {
+		if strings.Contains(msg.Topic(), "audio") {
 			audioMsg := audio.AudioMsg{
 				Topic: msg.Topic(),
 				Data:  msg.Payload()[:len(msg.Payload())],
@@ -100,26 +100,11 @@ func MqttClient(s MqttSettings) {
 		log.Println(token.Error())
 	}
 
-	txUserTopic := ""
-
 	for {
 		select {
 		case msg := <-s.ToWire:
 			token := client.Publish(msg.Topic, 0, false, msg.Data)
 			token.Wait()
-		case msg := <-s.TxUserTopic:
-			if client.IsConnected() {
-				if len(txUserTopic) != 0 {
-					if token := client.Unsubscribe(txUserTopic); token.Wait() && token.Error() != nil {
-						log.Println(token.Error())
-					}
-					txUserTopic = msg.(string)
-					token := client.Subscribe(txUserTopic, 0, nil)
-					if token.Wait() && token.Error() != nil {
-						log.Println(token.Error())
-					}
-				}
-			}
 		}
 	}
 }

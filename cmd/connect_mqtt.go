@@ -137,7 +137,7 @@ func mqttAudioClient() {
 		ToWire:           nil,
 		ToSerialize:      nil,
 		ToDeserialize:    toDeserializeAudioDataCh,
-		AudioToWireTopic: serverAudioInTopic,
+		AudioToWireTopic: serverAudioOutTopic,
 		EventChs: events.EventChs{
 			RxAudioOn: nil,
 		},
@@ -151,9 +151,10 @@ func mqttAudioClient() {
 	}
 
 	recorder := audio.AudioDevice{
-		ToWire:        toWireCh,
-		ToSerialize:   toSerializeAudioDataCh,
-		ToDeserialize: nil,
+		ToWire:           toWireCh,
+		ToSerialize:      toSerializeAudioDataCh,
+		AudioToWireTopic: serverAudioInTopic,
+		ToDeserialize:    nil,
 		EventChs: events.EventChs{
 			RxAudioOn: evPS.Sub(events.RxAudioOn),
 		},

@@ -127,7 +127,6 @@ func mqttAudioServer() {
 		ToDeserializeAudioDataCh: toDeserializeAudioDataCh,
 		ToDeserializeAudioReqCh:  toDeserializeAudioReqCh,
 		ToWire:                   toWireCh,
-		TxUserTopic:              evPS.Sub(events.TxUserTopic),
 		ConnStatus:               *connStatus,
 		InputBufferLength:        rxBufferLength,
 	}
