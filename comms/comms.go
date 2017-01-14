@@ -19,6 +19,7 @@ type MqttSettings struct {
 	Topics                   []string
 	ToDeserializeAudioDataCh chan audio.AudioMsg
 	ToDeserializeAudioReqCh  chan audio.AudioMsg
+	ToDeserializeAudioRespCh chan audio.AudioMsg
 	ToWire                   chan audio.AudioMsg
 	TxUserTopic              chan interface{}
 	ConnStatus               pubsub.PubSub

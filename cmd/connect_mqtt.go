@@ -113,7 +113,7 @@ func mqttAudioClient() {
 	toWireCh := make(chan audio.AudioMsg, 20)
 	toSerializeAudioDataCh := make(chan audio.AudioMsg, 20)
 	toDeserializeAudioDataCh := make(chan audio.AudioMsg, rxBufferLength)
-	toDeserializeAudioReqCh := make(chan audio.AudioMsg, 10)
+	toDeserializeAudioRespCh := make(chan audio.AudioMsg, 10)
 
 	evPS := pubsub.New(1)
 
@@ -124,11 +124,12 @@ func mqttAudioClient() {
 		ClientID:   mqttClientID,
 		Topics:     mqttTopics,
 		ToDeserializeAudioDataCh: toDeserializeAudioDataCh,
-		ToDeserializeAudioReqCh:  toDeserializeAudioReqCh,
-		ToWire:                   toWireCh,
-		TxUserTopic:              evPS.Sub(events.TxUserTopic),
-		ConnStatus:               *connStatus,
-		InputBufferLength:        rxBufferLength,
+		ToDeserializeAudioReqCh:  nil,
+		ToDeserializeAudioRespCh: toDeserializeAudioRespCh,
+		ToWire:            toWireCh,
+		TxUserTopic:       evPS.Sub(events.TxUserTopic),
+		ConnStatus:        *connStatus,
+		InputBufferLength: rxBufferLength,
 	}
 
 	player := audio.AudioDevice{
@@ -197,7 +198,8 @@ func mqttAudioClient() {
 				}
 			}
 
-		case data := <-toDeserializeAudioReqCh:
+		// responses coming from server
+		case data := <-toDeserializeAudioRespCh:
 
 			msg := sbAudio.ClientRequest{}
 
