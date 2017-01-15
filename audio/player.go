@@ -107,10 +107,10 @@ func PlayerSync(ad AudioDevice) {
 	for {
 		select {
 
-		// clear the tx user lock if nobody transmitted for the last 2 seconds
+		// clear the tx user lock if nobody transmitted for the last second
 		case <-txUserResetTicker.C:
 			d.muTx.Lock()
-			if time.Since(d.txTimestamp) > time.Second*2 {
+			if time.Since(d.txTimestamp) > 500*time.Millisecond {
 				d.txUser = ""
 			}
 			d.muTx.Unlock()

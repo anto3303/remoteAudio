@@ -64,7 +64,7 @@ type AudioMsg struct {
 	Raw    []float32
 	Topic  string
 	Retain bool
-	Qos    int
+	Qos    byte
 }
 
 // AudioDevice contains the configuration for an Audio Device

@@ -179,6 +179,7 @@ func mqttAudioServer() {
 
 	connectionStatusCh := connStatus.Sub(comms.CONNSTATUSTOPIC)
 	txUserCh := evPS.Sub(events.TxUser)
+	rxAudioOnCh := evPS.Sub(events.RxAudioOn)
 
 	status := serverStatus{}
 	status.topic = serverResponseTopic
@@ -192,10 +193,14 @@ func mqttAudioServer() {
 					fmt.Println(err)
 				}
 			}
+		case ev := <-rxAudioOnCh:
+			status.rxAudioOn = ev.(bool)
+			if err := updateStatus(&status, toWireCh); err != nil {
+				fmt.Println(err)
+			}
 
 		case ev := <-txUserCh:
-			txUser := ev.(string)
-			status.txUser = txUser
+			status.txUser = ev.(string)
 			if err := updateStatus(&status, toWireCh); err != nil {
 				fmt.Println(err)
 			}

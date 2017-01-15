@@ -187,18 +187,8 @@ func mqttAudioClient() {
 			s := msg.(comms.ConnectionStatus)
 
 			if s.Status == comms.CONNECTED {
-				req := sbAudio.ClientRequest{}
-				on := true
-				req.RxAudioOn = &on
-				m, err := req.Marshal()
-				if err != nil {
+				if err := sendClientRequest(true, serverRequestTopic, toWireCh); err != nil {
 					fmt.Println(err)
-				} else {
-					wireMsg := audio.AudioMsg{
-						Topic: serverRequestTopic,
-						Data:  m,
-					}
-					toWireCh <- wireMsg
 				}
 			}
 
@@ -224,6 +214,11 @@ func mqttAudioClient() {
 			if msg.RxAudioOn != nil {
 				rxAudioOn := msg.GetRxAudioOn()
 				fmt.Printf("Server Audio is %t\n", rxAudioOn)
+				if !rxAudioOn {
+					if err := sendClientRequest(true, serverRequestTopic, toWireCh); err != nil {
+						fmt.Println(err)
+					}
+				}
 			}
 
 			if msg.TxUser != nil {
@@ -232,4 +227,21 @@ func mqttAudioClient() {
 			}
 		}
 	}
+}
+
+func sendClientRequest(rxAudioOn bool, topic string, toWireCh chan audio.AudioMsg) error {
+	req := sbAudio.ClientRequest{}
+	req.RxAudioOn = &rxAudioOn
+	m, err := req.Marshal()
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		wireMsg := audio.AudioMsg{
+			Topic: topic,
+			Data:  m,
+		}
+		toWireCh <- wireMsg
+	}
+
+	return nil
 }

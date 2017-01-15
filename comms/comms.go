@@ -109,7 +109,7 @@ func MqttClient(s MqttSettings) {
 	for {
 		select {
 		case msg := <-s.ToWire:
-			token := client.Publish(msg.Topic, 0, false, msg.Data)
+			token := client.Publish(msg.Topic, msg.Qos, msg.Retain, msg.Data)
 			token.Wait()
 		}
 	}
