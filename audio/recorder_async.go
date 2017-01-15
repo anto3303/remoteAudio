@@ -14,6 +14,8 @@ import (
 // RecorderAsync grabs audio asynchronously from an AudioDevice
 func RecorderAsync(ad AudioDevice) {
 
+	rxAudioOnCh := ad.Events.Sub(events.RxAudioOn)
+
 	portaudio.Initialize()
 	defer portaudio.Terminate()
 
@@ -136,8 +138,6 @@ func RecorderAsync(ad AudioDevice) {
 		fmt.Println(err)
 		return
 	}
-
-	rxAudioOnCh := ad.Events.Sub(events.RxAudioOn)
 
 	for {
 		select {
