@@ -115,8 +115,6 @@ func mqttAudioServer() {
 
 	portaudio.Initialize()
 
-	connStatus := pubsub.New(1)
-
 	toWireCh := make(chan audio.AudioMsg, 20)
 	toSerializeAudioDataCh := make(chan audio.AudioMsg, 20)
 	toDeserializeAudioDataCh := make(chan audio.AudioMsg, rxBufferLength)
@@ -145,7 +143,7 @@ func mqttAudioServer() {
 		ToDeserializeAudioDataCh: toDeserializeAudioDataCh,
 		ToDeserializeAudioReqCh:  toDeserializeAudioReqCh,
 		ToWire:                   toWireCh,
-		Events:                   *connStatus,
+		Events:                   evPS,
 		LastWill:                 &lastWill,
 	}
 

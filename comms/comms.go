@@ -22,7 +22,7 @@ type MqttSettings struct {
 	ToDeserializeAudioReqCh  chan audio.AudioMsg
 	ToDeserializeAudioRespCh chan audio.AudioMsg
 	ToWire                   chan audio.AudioMsg
-	Events                   pubsub.PubSub
+	Events                   *pubsub.PubSub
 	LastWill                 *LastWill
 }
 
