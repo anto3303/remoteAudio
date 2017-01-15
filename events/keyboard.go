@@ -24,10 +24,20 @@ type EventChs struct {
 
 func CaptureKeyboard(conf EventsConf) {
 
+	rxAudioOnCh := conf.EventsPubSub.Sub(RxAudioOn)
+
 	rxAudioOn := false
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
+
+		select {
+		case ev := <-rxAudioOnCh:
+			rxAudioOn = ev.(bool)
+		default:
+			//pass
+		}
+
 		if scanner.Scan() {
 			switch scanner.Text() {
 			case "a":
