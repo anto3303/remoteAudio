@@ -59,6 +59,12 @@ func MqttClient(s MqttSettings) {
 				Data: msg.Payload()[:len(msg.Payload())],
 			}
 			s.ToDeserializeAudioReqCh <- audioReqMsg
+
+		} else if strings.Contains(msg.Topic(), "response") {
+			audioRespMsg := audio.AudioMsg{
+				Data: msg.Payload()[:len(msg.Payload())],
+			}
+			s.ToDeserializeAudioRespCh <- audioRespMsg
 		}
 	}
 

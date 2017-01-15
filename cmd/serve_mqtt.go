@@ -30,6 +30,7 @@ import (
 	"github.com/dh1tw/remoteAudio/audio"
 	"github.com/dh1tw/remoteAudio/comms"
 	"github.com/dh1tw/remoteAudio/events"
+	"github.com/dh1tw/remoteAudio/utils"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gordonklaus/portaudio"
 	"github.com/spf13/cobra"
@@ -65,6 +66,10 @@ func init() {
 }
 
 func mqttAudioServer() {
+
+	if viper.GetString("general.user_id") == "" {
+		viper.Set("general.user_id", utils.RandStringRunes(10))
+	}
 
 	// defer profile.Start(profile.MemProfile, profile.ProfilePath(".")).Stop()
 	// defer profile.Start(profile.CPUProfile, profile.ProfilePath(".")).Stop()

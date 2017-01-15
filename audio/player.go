@@ -101,8 +101,6 @@ func PlayerSync(ad AudioDevice) {
 
 	txUser := ""
 
-	txUserEventCh := ad.Events.Sub(events.TxUser)
-
 	txUserResetTicker := time.NewTicker(2 * time.Second)
 	txMonitorTicker := time.NewTicker(500 * time.Millisecond)
 
@@ -121,7 +119,7 @@ func PlayerSync(ad AudioDevice) {
 			d.muTx.Lock()
 
 			if txUser != d.txUser {
-				txUserEventCh <- d.txUser
+				ad.Events.Pub(d.txUser, events.TxUser)
 				txUser = d.txUser
 			}
 			d.muTx.Unlock()

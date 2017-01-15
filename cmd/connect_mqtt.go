@@ -24,11 +24,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/cskr/pubsub"
 	"github.com/dh1tw/remoteAudio/audio"
 	"github.com/dh1tw/remoteAudio/comms"
 	"github.com/dh1tw/remoteAudio/events"
+	"github.com/dh1tw/remoteAudio/utils"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gordonklaus/portaudio"
 	"github.com/spf13/cobra"
@@ -64,6 +66,10 @@ func init() {
 }
 
 func mqttAudioClient() {
+
+	if viper.GetString("general.user_id") == "" {
+		viper.Set("general.user_id", utils.RandStringRunes(10))
+	}
 
 	// defer profile.Start(profile.MemProfile, profile.ProfilePath(".")).Stop()
 	// defer profile.Start(profile.CPUProfile, profile.ProfilePath(".")).Stop()
@@ -206,14 +212,23 @@ func mqttAudioClient() {
 				fmt.Println(err)
 			}
 
+			if msg.Online != nil {
+				fmt.Println("Server Online:", msg.GetOnline())
+			}
+
+			if msg.LastSeen != nil {
+				tm := time.Unix(msg.GetLastSeen(), 0)
+				fmt.Println("Server Last Seen:", tm)
+			}
+
 			if msg.RxAudioOn != nil {
 				rxAudioOn := msg.GetRxAudioOn()
-				fmt.Printf("Server Audio is %t", rxAudioOn)
+				fmt.Printf("Server Audio is %t\n", rxAudioOn)
 			}
 
 			if msg.TxUser != nil {
 				txUser := msg.GetTxUser()
-				fmt.Printf("Server: Current TX User: %s", txUser)
+				fmt.Printf("Server: Current TX User: %s\n", txUser)
 			}
 		}
 	}

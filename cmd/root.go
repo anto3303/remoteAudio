@@ -25,7 +25,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/dh1tw/remoteAudio/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -128,10 +127,8 @@ func init() {
 	viper.BindPFlag("audio.rx_buffer_length", RootCmd.PersistentFlags().Lookup("rx_buffer_length"))
 	viper.BindPFlag("audio.codec", RootCmd.PersistentFlags().Lookup("codec"))
 
-	if !viper.IsSet("user.id") {
-		viper.Set("user.id", utils.RandStringRunes(10))
-	}
-	viper.BindPFlag("user.id", RootCmd.PersistentFlags().Lookup("user_id"))
+	viper.BindPFlag("general.user_id", RootCmd.PersistentFlags().Lookup("user_id"))
+
 }
 
 // initConfig reads in config file and ENV variables if set.
