@@ -133,7 +133,7 @@ func mqttAudioServer() {
 		Topic:  serverResponseTopic,
 		Data:   binaryWillMsg,
 		Qos:    0,
-		Retain: false,
+		Retain: true,
 	}
 
 	settings := comms.MqttSettings{
