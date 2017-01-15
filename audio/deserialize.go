@@ -32,19 +32,18 @@ func (d *deserializer) DeserializeAudioMsg(data []byte) error {
 	d.muTx.Lock()
 	defer d.muTx.Unlock()
 
-	if time.Since(d.txTimestamp) > time.Second {
-		txUser := msg.GetUserId()
-		switch d.txUser {
-		case "":
-			d.txUser = txUser
-			d.txTimestamp = time.Now()
-		case txUser:
-			d.txTimestamp = time.Now()
-		default: // return because someone else is transmitting
-			errMsg := fmt.Sprintf("%s tries to send; however tx blocked by %s",
-				txUser, d.txUser)
-			return errors.New(errMsg)
-		}
+	// let's make sure that we only accept audio data from the same user
+	txUser := msg.GetUserId()
+	switch d.txUser {
+	case "":
+		d.txUser = txUser
+		d.txTimestamp = time.Now()
+	case txUser:
+		d.txTimestamp = time.Now()
+	default: // return because someone else is transmitting
+		errMsg := fmt.Sprintf("%s tries to send; however tx blocked by %s",
+			txUser, d.txUser)
+		return errors.New(errMsg)
 	}
 
 	switch msg.GetCodec() {

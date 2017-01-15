@@ -101,7 +101,7 @@ func PlayerSync(ad AudioDevice) {
 
 	txUser := ""
 
-	txUserResetTicker := time.NewTicker(2 * time.Second)
+	txUserResetTicker := time.NewTicker(1 * time.Second)
 	txMonitorTicker := time.NewTicker(100 * time.Millisecond)
 
 	for {
