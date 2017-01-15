@@ -201,18 +201,21 @@ func mqttAudioServer() {
 				if err := updateStatus(&status, toWireCh); err != nil {
 					fmt.Println(err)
 				}
+				fmt.Println("updated online status")
 			}
 		case ev := <-rxAudioOnCh:
 			status.rxAudioOn = ev.(bool)
 			if err := updateStatus(&status, toWireCh); err != nil {
 				fmt.Println(err)
 			}
+			fmt.Println("updated rxAudio status to", status.rxAudioOn)
 
 		case ev := <-txUserCh:
 			status.txUser = ev.(string)
 			if err := updateStatus(&status, toWireCh); err != nil {
 				fmt.Println(err)
 			}
+			fmt.Println("updated txUser to", status.txUser)
 
 		case data := <-toDeserializeAudioReqCh:
 
@@ -231,6 +234,7 @@ func mqttAudioServer() {
 			if err := updateStatus(&status, toWireCh); err != nil {
 				fmt.Println(err)
 			}
+			fmt.Println("sent server response", status)
 		}
 	}
 }
