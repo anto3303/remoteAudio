@@ -133,8 +133,9 @@ func mqttAudioClient() {
 		ToDeserializeAudioDataCh: toDeserializeAudioDataCh,
 		ToDeserializeAudioReqCh:  nil,
 		ToDeserializeAudioRespCh: toDeserializeAudioRespCh,
-		ToWire:     toWireCh,
-		ConnStatus: *connStatus,
+		ToWire:   toWireCh,
+		Events:   *connStatus,
+		LastWill: nil,
 	}
 
 	player := audio.AudioDevice{
@@ -178,7 +179,7 @@ func mqttAudioClient() {
 
 	go events.CaptureKeyboard(eventsConf)
 
-	connectionStatusCh := connStatus.Sub(comms.CONNSTATUSTOPIC)
+	connectionStatusCh := evPS.Sub(events.MqttConnStatus)
 
 	for {
 		select {

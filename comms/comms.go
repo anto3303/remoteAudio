@@ -8,6 +8,7 @@ import (
 
 	"github.com/cskr/pubsub"
 	"github.com/dh1tw/remoteAudio/audio"
+	"github.com/dh1tw/remoteAudio/events"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
@@ -21,7 +22,7 @@ type MqttSettings struct {
 	ToDeserializeAudioReqCh  chan audio.AudioMsg
 	ToDeserializeAudioRespCh chan audio.AudioMsg
 	ToWire                   chan audio.AudioMsg
-	ConnStatus               pubsub.PubSub
+	Events                   pubsub.PubSub
 	LastWill                 *LastWill
 }
 
@@ -36,14 +37,6 @@ const (
 	DISCONNECTED = 0
 	CONNECTED    = 1
 )
-
-const (
-	CONNSTATUSTOPIC = "ConnectionStatusTopic"
-)
-
-type ConnectionStatus struct {
-	Status int
-}
 
 func MqttClient(s MqttSettings) {
 
@@ -77,8 +70,7 @@ func MqttClient(s MqttSettings) {
 
 	var connectionLostHandler = func(client mqtt.Client, err error) {
 		log.Println("Connection lost to MQTT Broker; Reason:", err)
-		status := ConnectionStatus{DISCONNECTED}
-		s.ConnStatus.Pub(status, CONNSTATUSTOPIC)
+		s.Events.Pub(DISCONNECTED, events.MqttConnStatus)
 	}
 
 	// since we use SetCleanSession we have to subscribe on each
@@ -93,8 +85,7 @@ func MqttClient(s MqttSettings) {
 				log.Println(token.Error())
 			}
 		}
-		status := ConnectionStatus{CONNECTED}
-		s.ConnStatus.Pub(status, CONNSTATUSTOPIC)
+		s.Events.Pub(CONNECTED, events.MqttConnStatus)
 	}
 
 	opts := mqtt.NewClientOptions().AddBroker(s.Transport + "://" + s.BrokerURL + ":" + strconv.Itoa(s.BrokerPort))

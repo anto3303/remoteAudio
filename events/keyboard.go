@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	RxAudioOn = "audioOn"
-	TxUser    = "txUser"
+	RxAudioOn      = "audioOn"
+	TxUser         = "txUser"
+	MqttConnStatus = "mqttConnStatus"
 )
 
 type EventsConf struct {

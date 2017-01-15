@@ -145,7 +145,7 @@ func mqttAudioServer() {
 		ToDeserializeAudioDataCh: toDeserializeAudioDataCh,
 		ToDeserializeAudioReqCh:  toDeserializeAudioReqCh,
 		ToWire:                   toWireCh,
-		ConnStatus:               *connStatus,
+		Events:                   *connStatus,
 		LastWill:                 &lastWill,
 	}
 
@@ -189,7 +189,7 @@ func mqttAudioServer() {
 
 	go events.CaptureKeyboard(eventsConf)
 
-	connectionStatusCh := connStatus.Sub(comms.CONNSTATUSTOPIC)
+	connectionStatusCh := evPS.Sub(events.MqttConnStatus)
 	txUserCh := evPS.Sub(events.TxUser)
 	rxAudioOnCh := evPS.Sub(events.RxAudioOn)
 
@@ -199,8 +199,7 @@ func mqttAudioServer() {
 	for {
 		select {
 		case ev := <-connectionStatusCh:
-			fmt.Println(ev)
-			if ev == comms.CONNECTED {
+			if ev.(int) == comms.CONNECTED {
 				if err := updateStatus(&status, toWireCh); err != nil {
 					fmt.Println(err)
 				}
