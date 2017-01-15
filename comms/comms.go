@@ -21,14 +21,13 @@ type MqttSettings struct {
 	ToDeserializeAudioReqCh  chan audio.AudioMsg
 	ToDeserializeAudioRespCh chan audio.AudioMsg
 	ToWire                   chan audio.AudioMsg
-	TxUserTopic              chan interface{}
 	ConnStatus               pubsub.PubSub
 	InputBufferLength        int
 }
 
 const (
+	DISCONNECTED = 0
 	CONNECTED    = 1
-	DISCONNECTED = 2
 )
 
 const (

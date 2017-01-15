@@ -9,9 +9,8 @@ import (
 )
 
 const (
-	RxAudioOn   = "RxAudioOn"
-	TxUserTopic = "TxUserTopic"
-	Ptt         = "Ptt"
+	RxAudioOn = "audioOn"
+	TxUser    = "txUser"
 )
 
 type EventsConf struct {
@@ -25,17 +24,12 @@ type EventChs struct {
 
 func CaptureKeyboard(conf EventsConf) {
 
-	ptt := false
 	rxAudioOn := false
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		if scanner.Scan() {
 			switch scanner.Text() {
-			case "p":
-				ptt = !ptt
-				conf.EventsPubSub.Pub(ptt, Ptt)
-				fmt.Println("keyboard - Ptt:", ptt)
 			case "a":
 				rxAudioOn = !rxAudioOn
 				conf.EventsPubSub.Pub(rxAudioOn, RxAudioOn)

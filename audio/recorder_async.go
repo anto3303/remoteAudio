@@ -6,6 +6,7 @@ import (
 
 	"github.com/dh1tw/gosamplerate"
 	"github.com/dh1tw/opus"
+	"github.com/dh1tw/remoteAudio/events"
 	"github.com/gordonklaus/portaudio"
 	"github.com/spf13/viper"
 )
@@ -140,9 +141,11 @@ func RecorderAsync(ad AudioDevice) {
 		return
 	}
 
+	rxAudioOnCh := ad.Events.Sub(events.RxAudioOn)
+
 	for {
 		select {
-		case msg := <-ad.EventChs.RxAudioOn:
+		case msg := <-rxAudioOnCh:
 			rxAudioOn := msg.(bool)
 			if rxAudioOn {
 				err = stream.Start()

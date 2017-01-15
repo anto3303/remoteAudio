@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/cskr/pubsub"
 	"github.com/dh1tw/remoteAudio/audio"
@@ -86,11 +87,11 @@ func mqttAudioServer() {
 		"/audio"
 
 	serverRequestTopic := baseTopic + "/request"
+	serverResponseTopic := baseTopic + "/response"
 	serverAudioOutTopic := baseTopic + "/audio_out"
 	serverAudioInTopic := baseTopic + "/audio_in"
-	// responseTopic := baseTopic + "/response"
+
 	// errorTopic := baseTopic + "/error"
-	// audioTopic := baseTopic + "/audio_data"
 
 	mqttTopics := []string{serverRequestTopic, serverAudioInTopic}
 
@@ -135,9 +136,7 @@ func mqttAudioServer() {
 		ToWire:        nil,
 		ToSerialize:   nil,
 		ToDeserialize: toDeserializeAudioDataCh,
-		EventChs: events.EventChs{
-			RxAudioOn: nil,
-		},
+		Events:        evPS,
 		AudioStream: audio.AudioStream{
 			DeviceName:      outputDeviceDeviceName,
 			FramesPerBuffer: audioFrameLength,
@@ -152,9 +151,7 @@ func mqttAudioServer() {
 		ToSerialize:      toSerializeAudioDataCh,
 		ToDeserialize:    nil,
 		AudioToWireTopic: serverAudioOutTopic,
-		EventChs: events.EventChs{
-			RxAudioOn: evPS.Sub(events.RxAudioOn),
-		},
+		Events:           evPS,
 		AudioStream: audio.AudioStream{
 			DeviceName:      inputDeviceDeviceName,
 			FramesPerBuffer: audioFrameLength,
@@ -176,11 +173,28 @@ func mqttAudioServer() {
 	go events.CaptureKeyboard(eventsConf)
 
 	connectionStatusCh := connStatus.Sub(comms.CONNSTATUSTOPIC)
+	txUserCh := evPS.Sub(events.TxUser)
+
+	status := serverStatus{}
+	status.topic = serverResponseTopic
 
 	for {
 		select {
-		case status := <-connectionStatusCh:
-			fmt.Println(status)
+		case ev := <-connectionStatusCh:
+			fmt.Println(ev)
+			if ev == comms.CONNECTED {
+				if err := updateStatus(&status, toWireCh); err != nil {
+					fmt.Println(err)
+				}
+			}
+
+		case ev := <-txUserCh:
+			txUser := ev.(string)
+			status.txUser = txUser
+			if err := updateStatus(&status, toWireCh); err != nil {
+				fmt.Println(err)
+			}
+
 		case data := <-toDeserializeAudioReqCh:
 
 			msg := sbAudio.ClientRequest{}
@@ -191,9 +205,47 @@ func mqttAudioServer() {
 			}
 
 			if msg.RxAudioOn != nil {
-				rxAudioOn := msg.GetRxAudioOn()
-				evPS.Pub(rxAudioOn, events.RxAudioOn)
+				status.rxAudioOn = msg.GetRxAudioOn()
+				evPS.Pub(status.rxAudioOn, events.RxAudioOn)
+			}
+
+			if err := updateStatus(&status, toWireCh); err != nil {
+				fmt.Println(err)
 			}
 		}
 	}
+}
+
+type serverStatus struct {
+	rxAudioOn bool
+	txUser    string
+	topic     string
+}
+
+func updateStatus(status *serverStatus, toWireCh chan audio.AudioMsg) error {
+
+	now := time.Now().Unix()
+	online := true
+
+	msg := sbAudio.ServerResponse{}
+	msg.LastSeen = &now
+	msg.Online = &online
+	msg.RxAudioOn = &status.rxAudioOn
+	msg.TxUser = &status.txUser
+
+	data, err := msg.Marshal()
+
+	if err != nil {
+		return err
+	}
+
+	m := audio.AudioMsg{}
+	m.Data = data
+	m.Topic = status.topic
+	m.Retain = true
+
+	toWireCh <- m
+
+	return nil
+
 }

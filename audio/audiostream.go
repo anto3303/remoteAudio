@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cskr/pubsub"
 	"github.com/dh1tw/gosamplerate"
 	"github.com/dh1tw/opus"
-	"github.com/dh1tw/remoteAudio/events"
 	sbAudio "github.com/dh1tw/remoteAudio/sb_audio"
 	"github.com/gordonklaus/portaudio"
 )
@@ -60,9 +60,11 @@ type AudioStream struct {
 
 // AudioMsg is a struct for internal communication
 type AudioMsg struct {
-	Data  []byte
-	Raw   []float32
-	Topic string
+	Data   []byte
+	Raw    []float32
+	Topic  string
+	Retain bool
+	Qos    int
 }
 
 // AudioDevice contains the configuration for an Audio Device
@@ -72,7 +74,7 @@ type AudioDevice struct {
 	ToWire           chan AudioMsg
 	ToDeserialize    chan AudioMsg
 	AudioToWireTopic string
-	EventChs         events.EventChs
+	Events           *pubsub.PubSub
 }
 
 // IdentifyDevice checks if the Audio Devices actually exist

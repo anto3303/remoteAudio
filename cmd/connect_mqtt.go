@@ -128,7 +128,6 @@ func mqttAudioClient() {
 		ToDeserializeAudioReqCh:  nil,
 		ToDeserializeAudioRespCh: toDeserializeAudioRespCh,
 		ToWire:            toWireCh,
-		TxUserTopic:       evPS.Sub(events.TxUserTopic),
 		ConnStatus:        *connStatus,
 		InputBufferLength: rxBufferLength,
 	}
@@ -138,9 +137,7 @@ func mqttAudioClient() {
 		ToSerialize:      nil,
 		ToDeserialize:    toDeserializeAudioDataCh,
 		AudioToWireTopic: serverAudioOutTopic,
-		EventChs: events.EventChs{
-			RxAudioOn: nil,
-		},
+		Events:           evPS,
 		AudioStream: audio.AudioStream{
 			DeviceName:      outputDeviceDeviceName,
 			FramesPerBuffer: audioFrameLength,
@@ -155,9 +152,7 @@ func mqttAudioClient() {
 		ToSerialize:      toSerializeAudioDataCh,
 		AudioToWireTopic: serverAudioInTopic,
 		ToDeserialize:    nil,
-		EventChs: events.EventChs{
-			RxAudioOn: evPS.Sub(events.RxAudioOn),
-		},
+		Events:           evPS,
 		AudioStream: audio.AudioStream{
 			DeviceName:      inputDeviceDeviceName,
 			FramesPerBuffer: audioFrameLength,
@@ -219,11 +214,6 @@ func mqttAudioClient() {
 			if msg.TxUser != nil {
 				txUser := msg.GetTxUser()
 				fmt.Printf("Server: Current TX User: %s", txUser)
-			}
-
-			if msg.Tx != nil {
-				tx := msg.GetTx()
-				fmt.Printf("Server: TX %t", tx)
 			}
 		}
 	}

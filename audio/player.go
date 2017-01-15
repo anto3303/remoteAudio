@@ -6,6 +6,7 @@ import (
 
 	"github.com/dh1tw/gosamplerate"
 	"github.com/dh1tw/opus"
+	"github.com/dh1tw/remoteAudio/events"
 	"github.com/gordonklaus/portaudio"
 	"github.com/spf13/viper"
 	ringBuffer "github.com/zfjagann/golang-ring"
@@ -98,16 +99,30 @@ func PlayerSync(ad AudioDevice) {
 	r := ringBuffer.Ring{}
 	r.SetCapacity(10)
 
-	txTimeoutTicker := time.NewTicker(2 * time.Second)
+	txUser := ""
+
+	txUserEventCh := ad.Events.Sub(events.TxUser)
+
+	txUserResetTicker := time.NewTicker(2 * time.Second)
+	txMonitorTicker := time.NewTicker(500 * time.Millisecond)
 
 	for {
 		select {
 
 		// clear the tx user lock if nobody transmitted for the last 2 seconds
-		case <-txTimeoutTicker.C:
+		case <-txUserResetTicker.C:
 			d.muTx.Lock()
 			if time.Since(d.txTimestamp) > time.Second*2 {
 				d.txUser = ""
+			}
+			d.muTx.Unlock()
+
+		case <-txMonitorTicker.C:
+			d.muTx.Lock()
+
+			if txUser != d.txUser {
+				txUserEventCh <- d.txUser
+				txUser = d.txUser
 			}
 			d.muTx.Unlock()
 
