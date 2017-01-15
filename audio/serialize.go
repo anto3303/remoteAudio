@@ -6,8 +6,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-// struct will all repetitive variables for serialization of
-// audio packets
+// serializer is a struct mainly used for caching variable which are
+// frequently written in protocol buffers messages.
 type serializer struct {
 	*AudioDevice
 	userID          string
@@ -21,6 +21,9 @@ type serializer struct {
 	pcmBitDepth     int32 // bitrate as int32
 }
 
+// SerializeOpusAudioMsg will encode the Audio Data with the OPUS Encoder
+// serialize it in a protocol buffers message and return the serialized protobuf
+// message in a byte array.
 func (s *serializer) SerializeOpusAudioMsg(in []float32) ([]byte, error) {
 
 	length, err := s.opusEncoder.EncodeFloat32(in, s.opusBuffer)
@@ -28,6 +31,7 @@ func (s *serializer) SerializeOpusAudioMsg(in []float32) ([]byte, error) {
 		return nil, err
 	}
 
+	// using sync.Pool for releasing pressure of the Garbage Collector
 	msg := sbAudioDataPool.Get().(*sbAudio.AudioData)
 	defer sbAudioDataPool.Put(msg)
 
@@ -45,9 +49,9 @@ func (s *serializer) SerializeOpusAudioMsg(in []float32) ([]byte, error) {
 	return data, nil
 }
 
-// SerializeAudioMsg serializes audio frames in a protocol buffers with the
+// SerializeAudioMsg serializes PCM audio frames in a protocol buffers with the
 // corresponding meta data. The amount of audio channels and sampingrate can
-// be specified.
+// be specified. If necessary, the audio data will be resampled.
 func (s *serializer) SerializePCMAudioMsg(in []float32) ([]byte, error) {
 
 	var resampledAudio []float32
@@ -59,7 +63,7 @@ func (s *serializer) SerializePCMAudioMsg(in []float32) ([]byte, error) {
 		ratio := float64(s.pcmSamplingrate) / s.Samplingrate // output samplerate / input samplerate
 		var err error
 		// cases: device MONO & output MONO  and device STEREO & output STEREO
-		resampledAudio, err = s.Converter.Process(in, ratio, false)
+		resampledAudio, err = s.PCMSamplerateConverter.Process(in, ratio, false)
 		if err != nil {
 			return nil, err
 		}
@@ -98,6 +102,7 @@ func (s *serializer) SerializePCMAudioMsg(in []float32) ([]byte, error) {
 		}
 	}
 
+	// using sync.Pool for releasing pressure of the Garbage Collector
 	msg := sbAudioDataPool.Get().(*sbAudio.AudioData)
 	defer sbAudioDataPool.Put(msg)
 
@@ -115,8 +120,6 @@ func (s *serializer) SerializePCMAudioMsg(in []float32) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// fmt.Println(len(data))
 
 	return data, nil
 }

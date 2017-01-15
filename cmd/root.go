@@ -87,7 +87,7 @@ func init() {
 	RootCmd.PersistentFlags().String("output_device_channels", "stereo", "Output Channels")
 
 	RootCmd.PersistentFlags().Float64("pcm_samplingrate", 16000, "pcm sampling rate")
-	RootCmd.PersistentFlags().Int("pcm_bitdepth", 16, "pcm audio bit depth")
+	RootCmd.PersistentFlags().Int("pcm_bitdepth", 16, "pcm audio bit depth (8, 12, 16, 24 bit)")
 	RootCmd.PersistentFlags().String("pcm_channels", "stereo", "pcm audio Channels")
 	RootCmd.PersistentFlags().Int("pcm_resampling_quality", 1, "pcm resampling quality")
 

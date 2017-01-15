@@ -4,33 +4,47 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cskr/pubsub"
-	"github.com/dh1tw/remoteAudio/audio"
 	"github.com/dh1tw/remoteAudio/events"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
 type MqttSettings struct {
+	WaitGroup                *sync.WaitGroup
 	Transport                string
 	BrokerURL                string
 	BrokerPort               int
 	ClientID                 string
 	Topics                   []string
-	ToDeserializeAudioDataCh chan audio.AudioMsg
-	ToDeserializeAudioReqCh  chan audio.AudioMsg
-	ToDeserializeAudioRespCh chan audio.AudioMsg
-	ToWire                   chan audio.AudioMsg
+	ToDeserializeAudioDataCh chan IOMsg
+	ToDeserializeAudioReqCh  chan IOMsg
+	ToDeserializeAudioRespCh chan IOMsg
+	ToWire                   chan IOMsg
 	Events                   *pubsub.PubSub
 	LastWill                 *LastWill
 }
 
+// LastWill defines the LastWill for MQTT. The LastWill will be
+// submitted to the broker on connection and will be published
+// on Disconnect.
 type LastWill struct {
 	Topic  string
 	Data   []byte
 	Qos    byte
 	Retain bool
+}
+
+// IOMsg is a struct used internally which either originates from or
+// will be send to the wire
+type IOMsg struct {
+	Data   []byte
+	Raw    []float32
+	Topic  string
+	Retain bool
+	Qos    byte
 }
 
 const (
@@ -45,23 +59,25 @@ func MqttClient(s MqttSettings) {
 	// mqtt.WARN = log.New(os.Stderr, "WARN - ", log.LstdFlags)
 	// mqtt.ERROR = log.New(os.Stderr, "ERROR - ", log.LstdFlags)
 
+	shutdownCh := s.Events.Sub(events.Shutdown)
+
 	var msgHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 
 		if strings.Contains(msg.Topic(), "audio/audio") {
-			audioMsg := audio.AudioMsg{
+			audioMsg := IOMsg{
 				Topic: msg.Topic(),
 				Data:  msg.Payload()[:len(msg.Payload())],
 			}
 			s.ToDeserializeAudioDataCh <- audioMsg
 
 		} else if strings.Contains(msg.Topic(), "request") {
-			audioReqMsg := audio.AudioMsg{
+			audioReqMsg := IOMsg{
 				Data: msg.Payload()[:len(msg.Payload())],
 			}
 			s.ToDeserializeAudioReqCh <- audioReqMsg
 
 		} else if strings.Contains(msg.Topic(), "response") {
-			audioRespMsg := audio.AudioMsg{
+			audioRespMsg := IOMsg{
 				Data: msg.Payload()[:len(msg.Payload())],
 			}
 			s.ToDeserializeAudioRespCh <- audioRespMsg
@@ -110,6 +126,11 @@ func MqttClient(s MqttSettings) {
 
 	for {
 		select {
+		case <-shutdownCh:
+			log.Println("Disconnecting from MQTT Broker")
+			client.Disconnect(0)
+			s.WaitGroup.Done()
+			return
 		case msg := <-s.ToWire:
 			token := client.Publish(msg.Topic, msg.Qos, msg.Retain, msg.Data)
 			token.Wait()

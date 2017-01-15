@@ -20,7 +20,11 @@ type deserializer struct {
 	txTimestamp time.Time
 }
 
+// DeserializeAudioMsg will deserialize a Protocol Buffers message containing
+// Audio data and its corresponding meta data
 func (d *deserializer) DeserializeAudioMsg(data []byte) error {
+
+	// using sync.Pool for releasing pressure of the Garbage Collector
 	msg := sbAudioDataPool.Get().(*sbAudio.AudioData)
 	defer sbAudioDataPool.Put(msg)
 
@@ -29,30 +33,34 @@ func (d *deserializer) DeserializeAudioMsg(data []byte) error {
 		return err
 	}
 
+	// let's make sure that we only accept audio data from the correct user
 	d.muTx.Lock()
-
-	// let's make sure that we only accept audio data from the same user
 	txUser := msg.GetUserId()
+
 	switch d.txUser {
+	// Nobody is currently transmitting
 	case "":
 		d.txUser = txUser
 		d.txTimestamp = time.Now()
 		d.muTx.Unlock()
+	// tx is assigned to a user; only accept new audio data from him
 	case txUser:
 		d.txTimestamp = time.Now()
 		d.muTx.Unlock()
-	default: // return because someone else is transmitting
+	// return because someone else is transmitting
+	default:
 		errMsg := fmt.Sprintf("%s tries to send; however tx blocked by %s",
 			txUser, d.txUser)
 		d.muTx.Unlock()
 		return errors.New(errMsg)
 	}
 
+	// select the codec (if field has not been set, it will default to OPUS)
 	switch msg.GetCodec() {
 	case sbAudio.Codec_OPUS:
-		err = d.DeserializeOpusAudioMsg(msg)
+		err = d.DecodeOpusAudioMsg(msg)
 	case sbAudio.Codec_PCM:
-		err = d.DeserializePCMAudioMsg(msg)
+		err = d.DecodePCMAudioMsg(msg)
 	default:
 		return errors.New("unknown Audio Codec")
 	}
@@ -62,9 +70,9 @@ func (d *deserializer) DeserializeAudioMsg(data []byte) error {
 	return nil
 }
 
-// DeserializeOpusAudioMsg deserializes a byte array containing an opus
+// DecodeOpusAudioMsg decodes a byte array containing an opus
 // encoded audio frame.
-func (d *deserializer) DeserializeOpusAudioMsg(msg *sbAudio.AudioData) error {
+func (d *deserializer) DecodeOpusAudioMsg(msg *sbAudio.AudioData) error {
 
 	len, err := d.opusDecoder.DecodeFloat32(msg.GetAudioRaw(), d.opusBuffer)
 	if err != nil {
@@ -76,11 +84,9 @@ func (d *deserializer) DeserializeOpusAudioMsg(msg *sbAudio.AudioData) error {
 	return nil
 }
 
-// DeserializePCMAudioMsg deserializes protocol buffers containing a PCM audio
-// frame with the corresponding meta data. In case the Audio channels and / or
-// Samplerate doesn't match with the hosts sound card, both will be converted to
-// match.
-func (ad *AudioDevice) DeserializePCMAudioMsg(msg *sbAudio.AudioData) error {
+// DecodePCMAudioMsg conditions an int32 PCM audio frame according to the
+// needs of the local audio stream (channels and/or sampling rate)
+func (ad *AudioDevice) DecodePCMAudioMsg(msg *sbAudio.AudioData) error {
 
 	var samplingrate float64
 	var channels, bitdepth int
@@ -141,7 +147,7 @@ func (ad *AudioDevice) DeserializePCMAudioMsg(msg *sbAudio.AudioData) error {
 	// if necessary, resample the audio
 	if samplingrate != ad.Samplingrate {
 		ratio := ad.Samplingrate / samplingrate // output samplerate / input samplerate
-		resampledAudio, err = ad.Converter.Process(convertedAudio, ratio, false)
+		resampledAudio, err = ad.PCMSamplerateConverter.Process(convertedAudio, ratio, false)
 		if err != nil {
 			return err
 		}

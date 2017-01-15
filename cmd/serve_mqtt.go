@@ -115,10 +115,10 @@ func mqttAudioServer() {
 
 	portaudio.Initialize()
 
-	toWireCh := make(chan audio.AudioMsg, 20)
-	toSerializeAudioDataCh := make(chan audio.AudioMsg, 20)
-	toDeserializeAudioDataCh := make(chan audio.AudioMsg, rxBufferLength)
-	toDeserializeAudioReqCh := make(chan audio.AudioMsg, 10)
+	toWireCh := make(chan comms.IOMsg, 20)
+	toSerializeAudioDataCh := make(chan comms.IOMsg, 20)
+	toDeserializeAudioDataCh := make(chan comms.IOMsg, rxBufferLength)
+	toDeserializeAudioReqCh := make(chan comms.IOMsg, 10)
 
 	evPS := pubsub.New(1)
 
@@ -181,11 +181,7 @@ func mqttAudioServer() {
 
 	go comms.MqttClient(settings)
 
-	eventsConf := events.EventsConf{
-		EventsPubSub: evPS,
-	}
-
-	go events.CaptureKeyboard(eventsConf)
+	go events.CaptureKeyboard(evPS)
 
 	connectionStatusCh := evPS.Sub(events.MqttConnStatus)
 	txUserCh := evPS.Sub(events.TxUser)
@@ -245,7 +241,7 @@ type serverStatus struct {
 	topic     string
 }
 
-func updateStatus(status *serverStatus, toWireCh chan audio.AudioMsg) error {
+func updateStatus(status *serverStatus, toWireCh chan comms.IOMsg) error {
 
 	now := time.Now().Unix()
 	online := true
@@ -262,7 +258,7 @@ func updateStatus(status *serverStatus, toWireCh chan audio.AudioMsg) error {
 		return err
 	}
 
-	m := audio.AudioMsg{}
+	m := comms.IOMsg{}
 	m.Data = data
 	m.Topic = status.topic
 	m.Retain = true
@@ -276,10 +272,8 @@ func updateStatus(status *serverStatus, toWireCh chan audio.AudioMsg) error {
 func createLastWillMsg() ([]byte, error) {
 
 	willMsg := sbAudio.ServerResponse{}
-	ts := time.Now().Unix()
 	online := false
 	audioOn := false
-	willMsg.LastSeen = &ts
 	willMsg.Online = &online
 	willMsg.RxAudioOn = &audioOn
 	data, err := willMsg.Marshal()

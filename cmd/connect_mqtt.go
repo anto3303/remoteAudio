@@ -24,6 +24,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"sync"
 	"time"
 
 	"github.com/cskr/pubsub"
@@ -115,14 +117,17 @@ func mqttAudioClient() {
 
 	portaudio.Initialize()
 
-	toWireCh := make(chan audio.AudioMsg, 20)
-	toSerializeAudioDataCh := make(chan audio.AudioMsg, 20)
-	toDeserializeAudioDataCh := make(chan audio.AudioMsg, rxBufferLength)
-	toDeserializeAudioRespCh := make(chan audio.AudioMsg, 10)
+	toWireCh := make(chan comms.IOMsg, 20)
+	toSerializeAudioDataCh := make(chan comms.IOMsg, 20)
+	toDeserializeAudioDataCh := make(chan comms.IOMsg, rxBufferLength)
+	toDeserializeAudioRespCh := make(chan comms.IOMsg, 10)
 
 	evPS := pubsub.New(1)
 
+	var wg sync.WaitGroup
+
 	settings := comms.MqttSettings{
+		WaitGroup:  &wg,
 		Transport:  "tcp",
 		BrokerURL:  mqttBrokerURL,
 		BrokerPort: mqttBrokerPort,
@@ -142,6 +147,7 @@ func mqttAudioClient() {
 		ToDeserialize:    toDeserializeAudioDataCh,
 		AudioToWireTopic: serverAudioOutTopic,
 		Events:           evPS,
+		WaitGroup:        &wg,
 		AudioStream: audio.AudioStream{
 			DeviceName:      outputDeviceDeviceName,
 			FramesPerBuffer: audioFrameLength,
@@ -157,6 +163,7 @@ func mqttAudioClient() {
 		AudioToWireTopic: serverAudioInTopic,
 		ToDeserialize:    nil,
 		Events:           evPS,
+		WaitGroup:        &wg,
 		AudioStream: audio.AudioStream{
 			DeviceName:      inputDeviceDeviceName,
 			FramesPerBuffer: audioFrameLength,
@@ -166,21 +173,26 @@ func mqttAudioClient() {
 		},
 	}
 
+	wg.Add(3) //mqtt, player, recorder
+
+	go events.WatchSystemEvents(evPS)
 	go audio.PlayerSync(player)
 	go audio.RecorderAsync(recorder)
-
 	go comms.MqttClient(settings)
-
-	eventsConf := events.EventsConf{
-		EventsPubSub: evPS,
-	}
-
-	go events.CaptureKeyboard(eventsConf)
+	go events.CaptureKeyboard(evPS)
 
 	connectionStatusCh := evPS.Sub(events.MqttConnStatus)
+	shutdownCh := evPS.Sub(events.Shutdown)
 
 	for {
 		select {
+
+		// shutdown the application gracefully
+		case <-shutdownCh:
+			wg.Wait()
+			os.Exit(0)
+
+		// connection has been established
 		case <-connectionStatusCh:
 			// do smthing later
 
@@ -226,14 +238,14 @@ func mqttAudioClient() {
 	}
 }
 
-func sendClientRequest(rxAudioOn bool, topic string, toWireCh chan audio.AudioMsg) error {
+func sendClientRequest(rxAudioOn bool, topic string, toWireCh chan comms.IOMsg) error {
 	req := sbAudio.ClientRequest{}
 	req.RxAudioOn = &rxAudioOn
 	m, err := req.Marshal()
 	if err != nil {
 		fmt.Println(err)
 	} else {
-		wireMsg := audio.AudioMsg{
+		wireMsg := comms.IOMsg{
 			Topic: topic,
 			Data:  m,
 		}
