@@ -22,7 +22,14 @@ type MqttSettings struct {
 	ToDeserializeAudioRespCh chan audio.AudioMsg
 	ToWire                   chan audio.AudioMsg
 	ConnStatus               pubsub.PubSub
-	InputBufferLength        int
+	LastWill                 *LastWill
+}
+
+type LastWill struct {
+	Topic  string
+	Data   []byte
+	Qos    byte
+	Retain bool
 }
 
 const (
@@ -99,6 +106,10 @@ func MqttClient(s MqttSettings) {
 	opts.SetOnConnectHandler(onConnectHandler)
 	opts.SetConnectionLostHandler(connectionLostHandler)
 	opts.SetAutoReconnect(true)
+
+	if s.LastWill != nil {
+		opts.SetBinaryWill(s.LastWill.Topic, s.LastWill.Data, s.LastWill.Qos, s.LastWill.Retain)
+	}
 
 	client := mqtt.NewClient(opts)
 

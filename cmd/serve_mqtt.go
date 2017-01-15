@@ -124,6 +124,18 @@ func mqttAudioServer() {
 
 	evPS := pubsub.New(1)
 
+	binaryWillMsg, err := createLastWillMsg()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	lastWill := comms.LastWill{
+		Topic:  serverResponseTopic,
+		Data:   binaryWillMsg,
+		Qos:    0,
+		Retain: false,
+	}
+
 	settings := comms.MqttSettings{
 		Transport:  "tcp",
 		BrokerURL:  mqttBrokerURL,
@@ -134,7 +146,7 @@ func mqttAudioServer() {
 		ToDeserializeAudioReqCh:  toDeserializeAudioReqCh,
 		ToWire:                   toWireCh,
 		ConnStatus:               *connStatus,
-		InputBufferLength:        rxBufferLength,
+		LastWill:                 &lastWill,
 	}
 
 	player := audio.AudioDevice{
@@ -258,4 +270,18 @@ func updateStatus(status *serverStatus, toWireCh chan audio.AudioMsg) error {
 
 	return nil
 
+}
+
+func createLastWillMsg() ([]byte, error) {
+
+	willMsg := sbAudio.ServerResponse{}
+	ts := time.Now().Unix()
+	online := false
+	audioOn := false
+	willMsg.LastSeen = &ts
+	willMsg.Online = &online
+	willMsg.RxAudioOn = &audioOn
+	data, err := willMsg.Marshal()
+
+	return data, err
 }

@@ -133,9 +133,8 @@ func mqttAudioClient() {
 		ToDeserializeAudioDataCh: toDeserializeAudioDataCh,
 		ToDeserializeAudioReqCh:  nil,
 		ToDeserializeAudioRespCh: toDeserializeAudioRespCh,
-		ToWire:            toWireCh,
-		ConnStatus:        *connStatus,
-		InputBufferLength: rxBufferLength,
+		ToWire:     toWireCh,
+		ConnStatus: *connStatus,
 	}
 
 	player := audio.AudioDevice{
@@ -183,14 +182,8 @@ func mqttAudioClient() {
 
 	for {
 		select {
-		case msg := <-connectionStatusCh:
-			s := msg.(comms.ConnectionStatus)
-
-			if s.Status == comms.CONNECTED {
-				if err := sendClientRequest(true, serverRequestTopic, toWireCh); err != nil {
-					fmt.Println(err)
-				}
-			}
+		case <-connectionStatusCh:
+			// do smthing later
 
 		// responses coming from server
 		case data := <-toDeserializeAudioRespCh:
