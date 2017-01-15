@@ -20,25 +20,27 @@ type EventsConf struct {
 
 func CaptureKeyboard(conf EventsConf) {
 
-	rxAudioOn := false
+	// rxAudioOn := false
 
-	rxAudioOnCh := conf.EventsPubSub.Sub(RxAudioOn)
+	// rxAudioOnCh := conf.EventsPubSub.Sub(RxAudioOn)
 
 	scanner := bufio.NewScanner(os.Stdin)
 
 	for {
-		select {
-		case ev := <-rxAudioOnCh:
-			rxAudioOn = ev.(bool)
-			fmt.Println("Audio is", rxAudioOn)
-		default:
-			// pass
-		}
+		// select {
+		// case ev := <-rxAudioOnCh:
+		// 	rxAudioOn = ev.(bool)
+		// 	fmt.Println("Audio is", rxAudioOn)
+		// default:
+		// 	// pass
+		// }
 
 		if scanner.Scan() {
 			switch scanner.Text() {
-			case "a":
-				conf.EventsPubSub.Pub(!rxAudioOn, RxAudioOn)
+			case "o":
+				conf.EventsPubSub.Pub(true, RxAudioOn)
+			case "O":
+				conf.EventsPubSub.Pub(false, RxAudioOn)
 			default:
 				fmt.Println("keyboard input:", scanner.Text())
 			}

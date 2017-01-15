@@ -194,19 +194,24 @@ func mqttAudioClient() {
 				fmt.Println(err)
 			}
 
+			var serverOnline bool = false
+			var serverLastSeen int64 = 0
+			var serverAudioOn bool = false
+
 			if msg.Online != nil {
-				fmt.Println("Server Online:", msg.GetOnline())
+				serverOnline = msg.GetOnline()
+				fmt.Println("Server Online:", serverOnline)
 			}
 
 			if msg.LastSeen != nil {
-				tm := time.Unix(msg.GetLastSeen(), 0)
-				fmt.Println("Server Last Seen:", tm)
+				serverLastSeen = msg.GetLastSeen()
+				fmt.Println("Server Last Seen:", time.Unix(serverLastSeen, 0))
 			}
 
 			if msg.RxAudioOn != nil {
-				rxAudioOn := msg.GetRxAudioOn()
-				fmt.Printf("Server Audio is %t\n", rxAudioOn)
-				if !rxAudioOn {
+				serverAudioOn = msg.GetRxAudioOn()
+				fmt.Printf("Server Audio is %t\n", serverAudioOn)
+				if !serverAudioOn && serverOnline {
 					if err := sendClientRequest(true, serverRequestTopic, toWireCh); err != nil {
 						fmt.Println(err)
 					}
