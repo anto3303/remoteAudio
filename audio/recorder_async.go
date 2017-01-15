@@ -2,6 +2,7 @@ package audio
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/dh1tw/gosamplerate"
 	"github.com/dh1tw/opus"
@@ -144,8 +145,10 @@ func RecorderAsync(ad AudioDevice) {
 			rxAudioOn := msg.(bool)
 			if rxAudioOn {
 				err = stream.Start()
+				log.Println("starting audio stream")
 			} else {
 				err = stream.Stop()
+				log.Println("stopping audio stream")
 			}
 			if err != nil {
 				fmt.Println(err)
