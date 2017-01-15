@@ -48,12 +48,13 @@ func MqttClient(s MqttSettings) {
 
 	var msgHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 
-		if strings.Contains(msg.Topic(), "audio") {
+		if strings.Contains(msg.Topic(), "audio/audio") {
 			audioMsg := audio.AudioMsg{
 				Topic: msg.Topic(),
 				Data:  msg.Payload()[:len(msg.Payload())],
 			}
 			s.ToDeserializeAudioDataCh <- audioMsg
+
 		} else if strings.Contains(msg.Topic(), "request") {
 			audioReqMsg := audio.AudioMsg{
 				Data: msg.Payload()[:len(msg.Payload())],

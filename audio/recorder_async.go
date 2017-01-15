@@ -168,7 +168,6 @@ func RecorderAsync(ad AudioDevice) {
 				msg.Data = data
 				ad.ToWire <- msg
 			}
-			// }
 		}
 	}
 }
