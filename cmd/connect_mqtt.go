@@ -33,6 +33,7 @@ import (
 	"github.com/dh1tw/remoteAudio/comms"
 	"github.com/dh1tw/remoteAudio/events"
 	"github.com/dh1tw/remoteAudio/utils"
+	"github.com/dh1tw/remoteAudio/webserver"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gordonklaus/portaudio"
 	"github.com/spf13/cobra"
@@ -141,6 +142,10 @@ func mqttAudioClient() {
 		LastWill: nil,
 	}
 
+	webserverSettings := webserver.WebServerSettings{
+		Events: evPS,
+	}
+
 	player := audio.AudioDevice{
 		ToWire:           nil,
 		ToSerialize:      nil,
@@ -175,6 +180,7 @@ func mqttAudioClient() {
 
 	wg.Add(3) //mqtt, player, recorder
 
+	go webserver.Webserver(webserverSettings)
 	go events.WatchSystemEvents(evPS)
 	go audio.PlayerSync(player)
 	go audio.RecorderAsync(recorder)
