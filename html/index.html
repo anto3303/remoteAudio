@@ -40,8 +40,9 @@
         <h1>RemoteAudio WebUI</h1>
         <div>
             <button class="btn btn-default" v-bind:class="{'btn-success': connectionStatus}">MQTT Connection</button>
+            <button class="btn btn-default" v-bind:class="{'btn-success': serverOnline}">Server Online</button>
             <button class="btn btn-default" v-bind:class="{'btn-success': serverAudioOn}" @click="sendRequestServerAudioOn">Server Audio</button>
-            <button class="btn btn-default" v-bind:class="{'btn-danger': ptt}" @click="sendPtt">PTT</button>
+            <button class="btn btn-default" v-bind:class="{'btn-danger': tx}" @click="sendPtt">PTT</button>
             <p> Tx User: {{txUser}} </p>
             <p> Ping: {{ping}}ms </p>
       </div>

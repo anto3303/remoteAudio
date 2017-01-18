@@ -74,6 +74,8 @@ func mqttAudioClient() {
 		viper.Set("general.user_id", utils.RandStringRunes(10))
 	}
 
+	user_id := viper.GetString("general.user_id")
+
 	// defer profile.Start(profile.MemProfile, profile.ProfilePath(".")).Stop()
 	// defer profile.Start(profile.CPUProfile, profile.ProfilePath(".")).Stop()
 	// defer profile.Start(profile.BlockProfile, profile.ProfilePath(".")).Stop()
@@ -190,6 +192,10 @@ func mqttAudioClient() {
 	connectionStatusCh := evPS.Sub(events.MqttConnStatus)
 	shutdownCh := evPS.Sub(events.Shutdown)
 
+	pingTicker := time.NewTicker(time.Second)
+
+	connectionStatus := comms.DISCONNECTED
+
 	for {
 		select {
 
@@ -199,8 +205,13 @@ func mqttAudioClient() {
 			os.Exit(0)
 
 		// connection has been established
-		case <-connectionStatusCh:
-			// do smthing later
+		case ev := <-connectionStatusCh:
+			connectionStatus = ev.(int)
+
+		case <-pingTicker.C:
+			if connectionStatus == comms.CONNECTED {
+				sendPing(user_id, serverRequestTopic, toWireCh)
+			}
 
 		// responses coming from server
 		case data := <-toDeserializeAudioRespCh:
@@ -219,6 +230,7 @@ func mqttAudioClient() {
 			if msg.Online != nil {
 				serverOnline = msg.GetOnline()
 				fmt.Println("Server Online:", serverOnline)
+				evPS.Pub(serverOnline, events.ServerOnline)
 			}
 
 			if msg.LastSeen != nil {
@@ -233,12 +245,23 @@ func mqttAudioClient() {
 					if err := sendClientRequest(true, serverRequestTopic, toWireCh); err != nil {
 						fmt.Println(err)
 					}
+				} else if serverAudioOn && serverOnline {
+					evPS.Pub(msg.GetRxAudioOn(), events.ServerAudioOn)
 				}
 			}
 
 			if msg.TxUser != nil {
 				txUser := msg.GetTxUser()
 				fmt.Printf("Server: Current TX User: %s\n", txUser)
+				evPS.Pub(txUser, events.TxUser)
+			}
+
+			if msg.PingOrigin != nil && msg.Pong != nil {
+				if msg.GetPingOrigin() == user_id {
+					pong := time.Unix(0, msg.GetPong())
+					delta := time.Since(pong)
+					fmt.Println("Ping:", delta.Seconds(), "s")
+				}
 			}
 		}
 	}
@@ -246,7 +269,7 @@ func mqttAudioClient() {
 
 func sendClientRequest(rxAudioOn bool, topic string, toWireCh chan comms.IOMsg) error {
 	req := sbAudio.ClientRequest{}
-	req.RxAudioOn = &rxAudioOn
+	req.StreamAudio = &rxAudioOn
 	m, err := req.Marshal()
 	if err != nil {
 		fmt.Println(err)
@@ -259,4 +282,23 @@ func sendClientRequest(rxAudioOn bool, topic string, toWireCh chan comms.IOMsg) 
 	}
 
 	return nil
+}
+
+func sendPing(user_id, topic string, toWireCh chan comms.IOMsg) {
+	now := time.Now().UnixNano()
+
+	req := sbAudio.ClientRequest{}
+	req.PingOrigin = &user_id
+	req.Ping = &now
+
+	data, err := req.Marshal()
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		wireMsg := comms.IOMsg{
+			Topic: topic,
+			Data:  data,
+		}
+		toWireCh <- wireMsg
+	}
 }

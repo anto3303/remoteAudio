@@ -44,10 +44,11 @@ type WebServerSettings struct {
 
 type ApplicationState struct {
 	ConnectionStatus bool   `json:"connectionStatus"`
+	ServerOnline     bool   `json:"serverOnline"`
 	ServerAudioOn    bool   `json:"serverAudioOn"`
-	Ptt              bool   `json:"ptt"`
+	Tx               bool   `json:"tx"`
 	TxUser           string `json:"txUser"`
-	Ping             int    `json:"ping"`
+	Ping             int64  `json:"ping"`
 }
 
 type ClientMessage struct {
@@ -80,14 +81,14 @@ func (hub *Hub) handleClientMsg(data []byte) {
 
 	if msg.SetPtt != nil {
 		hub.muAppState.Lock()
-		hub.appState.Ptt = *msg.SetPtt
+		hub.appState.Tx = *msg.SetPtt
 		hub.muAppState.Unlock()
-		hub.events.Pub(*msg.SetPtt, events.RxAudioOn)
+		hub.events.Pub(*msg.SetPtt, events.RecordAudioOn)
 		hub.sendMsg()
 	}
 
 	if msg.RequestServerAudioOn != nil {
-		hub.events.Pub(*msg.RequestServerAudioOn, events.RxAudioOn)
+		hub.events.Pub(*msg.RequestServerAudioOn, events.ServerAudioOn)
 		hub.sendMsg()
 	}
 }
@@ -95,14 +96,28 @@ func (hub *Hub) handleClientMsg(data []byte) {
 func (hub *Hub) start() {
 
 	connectionStatusCh := hub.events.Sub(events.MqttConnStatus)
-	rxAudioOnCh := hub.events.Sub(events.RxAudioOn)
+	serverAudioOnCh := hub.events.Sub(events.ServerAudioOn)
+	serverOnlineCh := hub.events.Sub(events.ServerOnline)
+	txCh := hub.events.Sub(events.RecordAudioOn)
 	txUserCh := hub.events.Sub(events.TxUser)
 
 	for {
 		select {
-		case ev := <-rxAudioOnCh:
+		case ev := <-serverAudioOnCh:
 			hub.muAppState.Lock()
 			hub.appState.ServerAudioOn = ev.(bool)
+			hub.muAppState.Unlock()
+			hub.sendMsg()
+
+		case ev := <-serverOnlineCh:
+			hub.muAppState.Lock()
+			hub.appState.ServerOnline = ev.(bool)
+			hub.muAppState.Unlock()
+			hub.sendMsg()
+
+		case ev := <-txCh:
+			hub.muAppState.Lock()
+			hub.appState.Tx = ev.(bool)
 			hub.muAppState.Unlock()
 			hub.sendMsg()
 

@@ -185,7 +185,7 @@ func mqttAudioServer() {
 
 	connectionStatusCh := evPS.Sub(events.MqttConnStatus)
 	txUserCh := evPS.Sub(events.TxUser)
-	rxAudioOnCh := evPS.Sub(events.RxAudioOn)
+	recordAudioOnCh := evPS.Sub(events.RecordAudioOn)
 
 	status := serverStatus{}
 	status.topic = serverResponseTopic
@@ -199,12 +199,12 @@ func mqttAudioServer() {
 				}
 				fmt.Println("updated online status")
 			}
-		case ev := <-rxAudioOnCh:
-			status.rxAudioOn = ev.(bool)
+		case ev := <-recordAudioOnCh:
+			status.recordAudioOn = ev.(bool)
 			if err := updateStatus(&status, toWireCh); err != nil {
 				fmt.Println(err)
 			}
-			fmt.Println("updated rxAudio status to", status.rxAudioOn)
+			fmt.Println("updated recordAudioOn status to", status.recordAudioOn)
 
 		case ev := <-txUserCh:
 			status.txUser = ev.(string)
@@ -222,9 +222,14 @@ func mqttAudioServer() {
 				fmt.Println(err)
 			}
 
-			if msg.RxAudioOn != nil {
-				status.rxAudioOn = msg.GetRxAudioOn()
-				evPS.Pub(status.rxAudioOn, events.RxAudioOn)
+			if msg.StreamAudio != nil {
+				status.recordAudioOn = msg.GetStreamAudio()
+				evPS.Pub(status.recordAudioOn, events.RecordAudioOn)
+			}
+
+			if msg.Ping != nil && msg.PingOrigin != nil {
+				status.pingOrigin = msg.GetPingOrigin()
+				status.pong = msg.GetPing()
 			}
 
 			if err := updateStatus(&status, toWireCh); err != nil {
@@ -236,24 +241,33 @@ func mqttAudioServer() {
 }
 
 type serverStatus struct {
-	rxAudioOn bool
-	txUser    string
-	topic     string
+	recordAudioOn bool
+	txUser        string
+	topic         string
+	pingOrigin    string
+	pong          int64
+}
+
+func (s *serverStatus) clearPing() {
+	s.pingOrigin = ""
+	s.pong = -1
 }
 
 func updateStatus(status *serverStatus, toWireCh chan comms.IOMsg) error {
 
 	now := time.Now().Unix()
 	online := true
+	defer status.clearPing()
 
 	msg := sbAudio.ServerResponse{}
 	msg.LastSeen = &now
 	msg.Online = &online
-	msg.RxAudioOn = &status.rxAudioOn
+	msg.RxAudioOn = &status.recordAudioOn
 	msg.TxUser = &status.txUser
+	msg.PingOrigin = &status.pingOrigin
+	msg.Pong = &status.pong
 
 	data, err := msg.Marshal()
-
 	if err != nil {
 		return err
 	}

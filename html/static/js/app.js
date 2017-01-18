@@ -3,9 +3,10 @@ new Vue({
 
     data: {
         ws: null, // Our websocket
-        ptt: false,
+        tx: false,
         txUser: null,
         ping: null,
+        serverOnline: false,
         serverAudioOn: false,
         connectionStatus: false,
     },
@@ -17,8 +18,9 @@ new Vue({
             self.connectionStatus = msg.connectionStatus
             self.txUser = msg.txUser
             self.ping = msg.ping
-            self.ptt = msg.ptt
+            self.tx = msg.tx
             self.serverAudioOn = msg.serverAudioOn
+            self.serverOnline = msg.serverOnline
         });
         this.ws.addEventListener('open', function () {
             console.log("websocket opened")
@@ -28,13 +30,13 @@ new Vue({
         sendRequestServerAudioOn: function () {
             this.ws.send(
                 JSON.stringify({
-                    ptt: !this.serverAudioState,
+                    serverAudioOn: !this.serverAudioOn,
                 }));
         },
         sendPtt: function () {
             this.ws.send(
                 JSON.stringify({
-                    ptt: !this.ptt,
+                    ptt: !this.tx,
                 }));
         },
     }

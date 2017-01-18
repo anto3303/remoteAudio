@@ -7,11 +7,21 @@ import (
 	"github.com/cskr/pubsub"
 )
 
+// Event channel names used for event Pubsub
+
+// internal
 const (
-	RxAudioOn      = "audioOn"
-	TxUser         = "txUser"
-	MqttConnStatus = "mqttConnStatus"
-	Shutdown       = "shutdown"
+	MqttConnStatus = "mqttConnStatus" // int
+	RecordAudioOn  = "recordAudio"    // bool
+	Shutdown       = "shutdown"       // bool
+)
+
+// for message handling
+const (
+	ServerOnline  = "serverOnline" //bool
+	ServerAudioOn = "audioOn"      // bool
+	TxUser        = "txUser"       // string
+	Ping          = "ping"         // int64
 )
 
 func WatchSystemEvents(evPS *pubsub.PubSub) {

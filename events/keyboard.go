@@ -16,9 +16,9 @@ func CaptureKeyboard(evPS *pubsub.PubSub) {
 		if scanner.Scan() {
 			switch scanner.Text() {
 			case "o":
-				evPS.Pub(true, RxAudioOn)
+				evPS.Pub(true, RecordAudioOn)
 			case "O":
-				evPS.Pub(false, RxAudioOn)
+				evPS.Pub(false, RecordAudioOn)
 			default:
 				fmt.Println("keyboard input:", scanner.Text())
 			}

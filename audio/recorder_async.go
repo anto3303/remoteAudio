@@ -17,7 +17,7 @@ import (
 func RecorderAsync(ad AudioDevice) {
 
 	// Subscribe on events
-	rxAudioOnCh := ad.Events.Sub(events.RxAudioOn)
+	recordAudioCh := ad.Events.Sub(events.RecordAudioOn)
 	shutdownCh := ad.Events.Sub(events.Shutdown)
 
 	// Initialize Portaudio
@@ -171,7 +171,7 @@ func RecorderAsync(ad AudioDevice) {
 			return
 
 		// start or stop the Audio recording
-		case msg := <-rxAudioOnCh:
+		case msg := <-recordAudioCh:
 			rxAudioOn := msg.(bool)
 			if rxAudioOn {
 				err = stream.Start()
