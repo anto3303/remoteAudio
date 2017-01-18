@@ -18,10 +18,11 @@ const (
 
 // for message handling
 const (
-	ServerOnline  = "serverOnline" //bool
-	ServerAudioOn = "audioOn"      // bool
-	TxUser        = "txUser"       // string
-	Ping          = "ping"         // int64
+	ServerOnline         = "serverOnline" //bool
+	ServerAudioOn        = "audioOn"      // bool
+	RequestServerAudioOn = "reqAudioOn"   // bool
+	TxUser               = "txUser"       // string
+	Ping                 = "ping"         // int64
 )
 
 func WatchSystemEvents(evPS *pubsub.PubSub) {

@@ -190,6 +190,7 @@ func mqttAudioClient() {
 	go events.CaptureKeyboard(evPS)
 
 	connectionStatusCh := evPS.Sub(events.MqttConnStatus)
+	reqServerAudioOnCh := evPS.Sub(events.RequestServerAudioOn)
 	shutdownCh := evPS.Sub(events.Shutdown)
 
 	pingTicker := time.NewTicker(time.Second)
@@ -208,9 +209,17 @@ func mqttAudioClient() {
 		case ev := <-connectionStatusCh:
 			connectionStatus = ev.(int)
 
+		// send ping if connected to Broker
 		case <-pingTicker.C:
 			if connectionStatus == comms.CONNECTED {
 				sendPing(user_id, serverRequestTopic, toWireCh)
+			}
+
+		case ev := <-reqServerAudioOnCh:
+			if connectionStatus == comms.CONNECTED {
+				if err := sendClientRequest(ev.(bool), serverRequestTopic, toWireCh); err != nil {
+					fmt.Println(err)
+				}
 			}
 
 		// responses coming from server
@@ -238,16 +247,10 @@ func mqttAudioClient() {
 				fmt.Println("Server Last Seen:", time.Unix(serverLastSeen, 0))
 			}
 
-			if msg.RxAudioOn != nil {
-				serverAudioOn = msg.GetRxAudioOn()
+			if msg.AudioStream != nil {
+				serverAudioOn = msg.GetAudioStream()
 				fmt.Printf("Server Audio is %t\n", serverAudioOn)
-				if !serverAudioOn && serverOnline {
-					if err := sendClientRequest(true, serverRequestTopic, toWireCh); err != nil {
-						fmt.Println(err)
-					}
-				} else if serverAudioOn && serverOnline {
-					evPS.Pub(msg.GetRxAudioOn(), events.ServerAudioOn)
-				}
+				evPS.Pub(serverAudioOn, events.ServerAudioOn)
 			}
 
 			if msg.TxUser != nil {
@@ -260,16 +263,17 @@ func mqttAudioClient() {
 				if msg.GetPingOrigin() == user_id {
 					pong := time.Unix(0, msg.GetPong())
 					delta := time.Since(pong)
-					fmt.Println("Ping:", delta.Seconds(), "s")
+					fmt.Println("Ping:", delta.Nanoseconds()/1000000, "ms")
+					evPS.Pub(delta.Nanoseconds(), events.Ping)
 				}
 			}
 		}
 	}
 }
 
-func sendClientRequest(rxAudioOn bool, topic string, toWireCh chan comms.IOMsg) error {
+func sendClientRequest(audioStreamOn bool, topic string, toWireCh chan comms.IOMsg) error {
 	req := sbAudio.ClientRequest{}
-	req.StreamAudio = &rxAudioOn
+	req.AudioStream = &audioStreamOn
 	m, err := req.Marshal()
 	if err != nil {
 		fmt.Println(err)

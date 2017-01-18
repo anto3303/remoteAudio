@@ -222,8 +222,8 @@ func mqttAudioServer() {
 				fmt.Println(err)
 			}
 
-			if msg.StreamAudio != nil {
-				status.recordAudioOn = msg.GetStreamAudio()
+			if msg.AudioStream != nil {
+				status.recordAudioOn = msg.GetAudioStream()
 				evPS.Pub(status.recordAudioOn, events.RecordAudioOn)
 			}
 
@@ -262,7 +262,7 @@ func updateStatus(status *serverStatus, toWireCh chan comms.IOMsg) error {
 	msg := sbAudio.ServerResponse{}
 	msg.LastSeen = &now
 	msg.Online = &online
-	msg.RxAudioOn = &status.recordAudioOn
+	msg.AudioStream = &status.recordAudioOn
 	msg.TxUser = &status.txUser
 	msg.PingOrigin = &status.pingOrigin
 	msg.Pong = &status.pong
@@ -289,7 +289,7 @@ func createLastWillMsg() ([]byte, error) {
 	online := false
 	audioOn := false
 	willMsg.Online = &online
-	willMsg.RxAudioOn = &audioOn
+	willMsg.AudioStream = &audioOn
 	data, err := willMsg.Marshal()
 
 	return data, err

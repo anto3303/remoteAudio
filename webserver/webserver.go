@@ -88,7 +88,7 @@ func (hub *Hub) handleClientMsg(data []byte) {
 	}
 
 	if msg.RequestServerAudioOn != nil {
-		hub.events.Pub(*msg.RequestServerAudioOn, events.ServerAudioOn)
+		hub.events.Pub(*msg.RequestServerAudioOn, events.RequestServerAudioOn)
 		hub.sendMsg()
 	}
 }
@@ -100,6 +100,7 @@ func (hub *Hub) start() {
 	serverOnlineCh := hub.events.Sub(events.ServerOnline)
 	txCh := hub.events.Sub(events.RecordAudioOn)
 	txUserCh := hub.events.Sub(events.TxUser)
+	pingCh := hub.events.Sub(events.Ping)
 
 	for {
 		select {
@@ -124,6 +125,12 @@ func (hub *Hub) start() {
 		case ev := <-txUserCh:
 			hub.muAppState.Lock()
 			hub.appState.TxUser = ev.(string)
+			hub.muAppState.Unlock()
+			hub.sendMsg()
+
+		case ev := <-pingCh:
+			hub.muAppState.Lock()
+			hub.appState.Ping = ev.(int64) / 1000000 // milliseconds
 			hub.muAppState.Unlock()
 			hub.sendMsg()
 
