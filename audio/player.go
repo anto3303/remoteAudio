@@ -177,7 +177,7 @@ func PlayerSync(ad AudioDevice) {
 					stream.Write()
 				}
 			} else {
-				time.Sleep(time.Microsecond * 100)
+				time.Sleep(time.Microsecond * 1000)
 			}
 		}
 	}
