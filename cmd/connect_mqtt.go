@@ -106,7 +106,6 @@ func mqttAudioClient() {
 	mqttTopics := []string{serverResponseTopic, serverAudioOutTopic}
 
 	audioFrameLength := viper.GetInt("audio.frame_length")
-	rxBufferLength := viper.GetInt("audio.rx_buffer_length")
 
 	outputDeviceDeviceName := viper.GetString("output_device.device_name")
 	outputDeviceSamplingrate := viper.GetFloat64("output_device.samplingrate")
@@ -122,7 +121,7 @@ func mqttAudioClient() {
 
 	toWireCh := make(chan comms.IOMsg, 20)
 	toSerializeAudioDataCh := make(chan comms.IOMsg, 20)
-	toDeserializeAudioDataCh := make(chan comms.IOMsg, rxBufferLength)
+	toDeserializeAudioDataCh := make(chan comms.IOMsg, 10)
 	toDeserializeAudioRespCh := make(chan comms.IOMsg, 10)
 
 	evPS := pubsub.New(1)
@@ -186,8 +185,10 @@ func mqttAudioClient() {
 	go events.WatchSystemEvents(evPS)
 	go audio.PlayerSync(player)
 	go audio.RecorderAsync(recorder)
+	// give the Audio Streams time to setup and start
+	time.Sleep(time.Millisecond * 200)
 	go comms.MqttClient(settings)
-	go events.CaptureKeyboard(evPS)
+	// go events.CaptureKeyboard(evPS)
 
 	connectionStatusCh := evPS.Sub(events.MqttConnStatus)
 	reqServerAudioOnCh := evPS.Sub(events.RequestServerAudioOn)
@@ -232,30 +233,25 @@ func mqttAudioClient() {
 				fmt.Println(err)
 			}
 
-			var serverOnline bool = false
-			var serverLastSeen int64 = 0
-			var serverAudioOn bool = false
+			// local states
+			serverOnline := false
+			serverAudioOn := false
 
 			if msg.Online != nil {
 				serverOnline = msg.GetOnline()
-				fmt.Println("Server Online:", serverOnline)
+				// fmt.Println("Server Online:", serverOnline)
 				evPS.Pub(serverOnline, events.ServerOnline)
-			}
-
-			if msg.LastSeen != nil {
-				serverLastSeen = msg.GetLastSeen()
-				fmt.Println("Server Last Seen:", time.Unix(serverLastSeen, 0))
 			}
 
 			if msg.AudioStream != nil {
 				serverAudioOn = msg.GetAudioStream()
-				fmt.Printf("Server Audio is %t\n", serverAudioOn)
+				// fmt.Printf("Server Audio is %t\n", serverAudioOn)
 				evPS.Pub(serverAudioOn, events.ServerAudioOn)
 			}
 
 			if msg.TxUser != nil {
 				txUser := msg.GetTxUser()
-				fmt.Printf("Server: Current TX User: %s\n", txUser)
+				// fmt.Printf("Server: Current TX User: %s\n", txUser)
 				evPS.Pub(txUser, events.TxUser)
 			}
 
@@ -263,7 +259,7 @@ func mqttAudioClient() {
 				if msg.GetPingOrigin() == user_id {
 					pong := time.Unix(0, msg.GetPong())
 					delta := time.Since(pong)
-					fmt.Println("Ping:", delta.Nanoseconds()/1000000, "ms")
+					// fmt.Println("Ping:", delta.Nanoseconds()/1000000, "ms")
 					evPS.Pub(delta.Nanoseconds(), events.Ping)
 				}
 			}

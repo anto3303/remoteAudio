@@ -9,10 +9,10 @@ import (
 
 	"github.com/cskr/pubsub"
 	"github.com/dh1tw/gosamplerate"
-	"github.com/dh1tw/opus"
 	"github.com/dh1tw/remoteAudio/comms"
 	sbAudio "github.com/dh1tw/remoteAudio/sb_audio"
 	"github.com/gordonklaus/portaudio"
+	"gopkg.in/hraban/opus.v2"
 )
 
 const (
@@ -113,11 +113,11 @@ func GetOpusMaxBandwith(maxBw string) (opus.Bandwidth, error) {
 	case "narrowband":
 		return opus.Narrowband, nil
 	case "mediumband":
-		return opus.MediumBand, nil
+		return opus.Mediumband, nil
 	case "wideband":
-		return opus.WideBand, nil
+		return opus.Wideband, nil
 	case "superwideband":
-		return opus.SuperWideBand, nil
+		return opus.SuperWideband, nil
 	case "fullband":
 		return opus.Fullband, nil
 	}

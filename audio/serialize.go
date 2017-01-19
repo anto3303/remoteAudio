@@ -1,9 +1,9 @@
 package audio
 
 import (
-	"github.com/dh1tw/opus"
 	sbAudio "github.com/dh1tw/remoteAudio/sb_audio"
 	"github.com/gogo/protobuf/proto"
+	"gopkg.in/hraban/opus.v2"
 )
 
 // serializer is a struct mainly used for caching variable which are

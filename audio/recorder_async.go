@@ -6,15 +6,17 @@ import (
 	"time"
 
 	"github.com/dh1tw/gosamplerate"
-	"github.com/dh1tw/opus"
 	"github.com/dh1tw/remoteAudio/comms"
 	"github.com/dh1tw/remoteAudio/events"
 	"github.com/gordonklaus/portaudio"
 	"github.com/spf13/viper"
+	"gopkg.in/hraban/opus.v2"
 )
 
 // RecorderAsync grabs audio asynchronously from an a local audio device
 func RecorderAsync(ad AudioDevice) {
+
+	defer ad.WaitGroup.Done()
 
 	// Subscribe on events
 	recordAudioCh := ad.Events.Sub(events.RecordAudioOn)
@@ -42,14 +44,12 @@ func RecorderAsync(ad AudioDevice) {
 		if err != nil {
 			fmt.Println("unable to find default recording sound device")
 			fmt.Println(err)
-			ad.WaitGroup.Done()
 			return // exit go routine
 		}
 	} else {
 		if err := ad.IdentifyDevice(); err != nil {
 			fmt.Printf("unable to find recording sound device %s\n", ad.DeviceName)
 			fmt.Println(err)
-			ad.WaitGroup.Done()
 			return //exit go routine
 		}
 	}
@@ -85,7 +85,6 @@ func RecorderAsync(ad AudioDevice) {
 	app, err := GetOpusApplication(viper.GetString("opus.application"))
 	if err != nil {
 		fmt.Println(err)
-		ad.WaitGroup.Done()
 		return
 	}
 
@@ -95,35 +94,31 @@ func RecorderAsync(ad AudioDevice) {
 		app)
 	if err != nil || opusEncoder == nil {
 		fmt.Println(err)
-		ad.WaitGroup.Done()
 		return
 	}
 
 	err = opusEncoder.SetBitrate(viper.GetInt("opus.bitrate"))
 	if err != nil {
 		fmt.Println("invalid Opus bitrate", err)
-		ad.WaitGroup.Done()
 		return
 	}
 
 	err = opusEncoder.SetComplexity(viper.GetInt("opus.complexity"))
 	if err != nil {
 		fmt.Println("invalid Opus complexity value", err)
-		ad.WaitGroup.Done()
 		return
 	}
 
 	maxBw, err := GetOpusMaxBandwith(viper.GetString("opus.max_bandwidth"))
 	if err != nil {
 		fmt.Println(err)
-		ad.WaitGroup.Done()
+
 		return
 	}
 
 	err = opusEncoder.SetMaxBandwidth(maxBw)
 	if err != nil {
 		fmt.Println(err)
-		ad.WaitGroup.Done()
 		return
 	}
 
@@ -136,7 +131,6 @@ func RecorderAsync(ad AudioDevice) {
 	if err != nil {
 		fmt.Printf("unable to open recording audio stream on device %s\n", ad.DeviceName)
 		fmt.Println(err)
-		ad.WaitGroup.Done()
 		return // exit go routine
 	}
 	defer stream.Stop()
@@ -146,7 +140,6 @@ func RecorderAsync(ad AudioDevice) {
 	if err != nil {
 		fmt.Println("unable to create PCM samplerate converter")
 		fmt.Println(err)
-		ad.WaitGroup.Done()
 		return // exit go routine
 	}
 	defer gosamplerate.Delete(ad.PCMSamplerateConverter)
@@ -154,7 +147,6 @@ func RecorderAsync(ad AudioDevice) {
 	codec, err := GetCodec(viper.GetString("audio.codec"))
 	if err != nil {
 		fmt.Println(err)
-		ad.WaitGroup.Done()
 		return
 	}
 
@@ -167,7 +159,6 @@ func RecorderAsync(ad AudioDevice) {
 		case <-shutdownCh:
 			log.Println("Shutdown Recorder")
 			stream.Stop()
-			ad.WaitGroup.Done()
 			return
 
 		// start or stop the Audio recording

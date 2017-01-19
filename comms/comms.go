@@ -1,6 +1,7 @@
 package comms
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -68,6 +69,7 @@ func MqttClient(s MqttSettings) {
 				Topic: msg.Topic(),
 				Data:  msg.Payload()[:len(msg.Payload())],
 			}
+			fmt.Println("NETWORK", time.Now().Format(time.StampMilli))
 			s.ToDeserializeAudioDataCh <- audioMsg
 
 		} else if strings.Contains(msg.Topic(), "request") {

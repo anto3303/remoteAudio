@@ -47,12 +47,12 @@ new Vue({
                 }));
         },
         sendPtt: function () {
-            if (this.serverAudioOn) {
+            // if (this.serverAudioOn) {
                 this.ws.send(
                     JSON.stringify({
                         ptt: !this.tx,
                     }));
-            }
+            // }
         },
     }
 })

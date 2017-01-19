@@ -6,15 +6,17 @@ import (
 	"time"
 
 	"github.com/dh1tw/gosamplerate"
-	"github.com/dh1tw/opus"
 	"github.com/dh1tw/remoteAudio/events"
 	"github.com/gordonklaus/portaudio"
 	"github.com/spf13/viper"
 	ringBuffer "github.com/zfjagann/golang-ring"
+	"gopkg.in/hraban/opus.v2"
 )
 
 //PlayerSync plays received audio on a local audio device
 func PlayerSync(ad AudioDevice) {
+
+	defer ad.WaitGroup.Done()
 
 	portaudio.Initialize()
 	defer portaudio.Terminate()
@@ -160,6 +162,7 @@ func PlayerSync(ad AudioDevice) {
 
 		// write received audio data into the ring buffer
 		case msg := <-ad.ToDeserialize:
+			fmt.Println("RINGBUFFER", time.Now().Format(time.StampMilli))
 			r.Enqueue(msg.Data)
 
 		default:
@@ -170,6 +173,7 @@ func PlayerSync(ad AudioDevice) {
 				if err != nil {
 					fmt.Println(err)
 				} else {
+					fmt.Println("PLAYER", time.Now().Format(time.StampMilli))
 					stream.Write()
 				}
 			} else {

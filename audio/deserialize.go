@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dh1tw/opus"
 	sbAudio "github.com/dh1tw/remoteAudio/sb_audio"
 	"github.com/gogo/protobuf/proto"
+	"gopkg.in/hraban/opus.v2"
 )
 
 type deserializer struct {
