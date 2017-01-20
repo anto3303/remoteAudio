@@ -1,7 +1,6 @@
 package comms
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -41,11 +40,13 @@ type LastWill struct {
 // IOMsg is a struct used internally which either originates from or
 // will be send to the wire
 type IOMsg struct {
-	Data   []byte
-	Raw    []float32
-	Topic  string
-	Retain bool
-	Qos    byte
+	Data       []byte
+	Raw        []float32
+	Topic      string
+	Retain     bool
+	Qos        byte
+	MQTTts     time.Time
+	EnqueuedTs time.Time
 }
 
 const (
@@ -66,10 +67,9 @@ func MqttClient(s MqttSettings) {
 
 		if strings.Contains(msg.Topic(), "audio/audio") {
 			audioMsg := IOMsg{
-				Topic: msg.Topic(),
-				Data:  msg.Payload()[:len(msg.Payload())],
+				Data: msg.Payload()[:len(msg.Payload())],
 			}
-			fmt.Println("NETWORK", time.Now().Format(time.StampMilli))
+			audioMsg.MQTTts = time.Now()
 			s.ToDeserializeAudioDataCh <- audioMsg
 
 		} else if strings.Contains(msg.Topic(), "request") {

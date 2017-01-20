@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dh1tw/gosamplerate"
+	"github.com/dh1tw/remoteAudio/comms"
 	"github.com/dh1tw/remoteAudio/events"
 	"github.com/gordonklaus/portaudio"
 	"github.com/spf13/viper"
@@ -162,18 +163,21 @@ func PlayerSync(ad AudioDevice) {
 
 		// write received audio data into the ring buffer
 		case msg := <-ad.ToDeserialize:
-			fmt.Println("RINGBUFFER", time.Now().Format(time.StampMilli))
-			r.Enqueue(msg.Data)
+			msg.EnqueuedTs = time.Now()
+			r.Enqueue(msg)
 
 		default:
 			data := r.Dequeue()
 			// check if new data is available in the ring buffer
 			if data != nil {
-				err := d.DeserializeAudioMsg(data.([]byte))
+				// err := d.DeserializeAudioMsg(data.([]byte))
+				ts := data.(comms.IOMsg)
+				err := d.DeserializeAudioMsg(ts.Data)
+				fmt.Println("Delta MQTT:", time.Since(ts.MQTTts).Nanoseconds()/1000000)
+				fmt.Println("Delta Enqueue:", time.Since(ts.EnqueuedTs).Nanoseconds()/1000000)
 				if err != nil {
 					fmt.Println(err)
 				} else {
-					fmt.Println("PLAYER", time.Now().Format(time.StampMilli))
 					stream.Write()
 				}
 			} else {
