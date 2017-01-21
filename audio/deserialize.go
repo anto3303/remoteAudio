@@ -74,12 +74,26 @@ func (d *deserializer) DeserializeAudioMsg(data []byte) error {
 // encoded audio frame.
 func (d *deserializer) DecodeOpusAudioMsg(msg *sbAudio.AudioData) error {
 
-	len, err := d.opusDecoder.DecodeFloat32(msg.GetAudioRaw(), d.opusBuffer)
+	lenSample, err := d.opusDecoder.DecodeFloat32(msg.GetAudioRaw(), d.opusBuffer)
 	if err != nil {
 		return err
 	}
 
-	d.out = d.opusBuffer[:len*d.Channels]
+	lenFrame := lenSample * d.AudioDevice.Channels
+	// lenBuffer := len(d.out)
+
+	// fmt.Println("sample length", lenSample)
+	// fmt.Println("frame length:", lenFrame)
+	// fmt.Println("buffer length:", lenBuffer)
+
+	// if lenBuffer == lenFrame {
+	// 	for i := 0; i < lenFrame; i++ {
+	// 		d.out[i] = d.opusBuffer[i]
+	// 	}
+	// } else {
+	d.out = d.opusBuffer[:lenFrame]
+	// 	fmt.Println("resized buffer")
+	// }
 
 	return nil
 }

@@ -69,7 +69,7 @@ func MqttClient(s MqttSettings) {
 			audioMsg := IOMsg{
 				Data: msg.Payload()[:len(msg.Payload())],
 			}
-			audioMsg.MQTTts = time.Now()
+			// audioMsg.MQTTts = time.Now()
 			s.ToDeserializeAudioDataCh <- audioMsg
 
 		} else if strings.Contains(msg.Topic(), "request") {

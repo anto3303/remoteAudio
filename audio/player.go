@@ -17,6 +17,8 @@ import (
 //PlayerSync plays received audio on a local audio device
 func PlayerSync(ad AudioDevice) {
 
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+
 	defer ad.WaitGroup.Done()
 
 	portaudio.Initialize()
@@ -30,6 +32,12 @@ func PlayerSync(ad AudioDevice) {
 	// DefaultOutputDevice is accessed without portaudio
 	// being completely initialized
 	time.Sleep(time.Millisecond * 200)
+
+	ad.out = make([]float32, ad.FramesPerBuffer*ad.Channels)
+
+	fmt.Println("Player Channels:", ad.Channels)
+	fmt.Println("Player Frames:", ad.FramesPerBuffer)
+	fmt.Println("Player Out Buffer:", len(ad.out))
 
 	//ad.out doesn't need to be initialized with a fixed buffer size
 	//since the slice will be copied from the incoming data
@@ -84,7 +92,7 @@ func PlayerSync(ad AudioDevice) {
 	d.txTimestamp = time.Now()
 
 	// initialize the Opus Decoder
-	opusDecoder, err := opus.NewDecoder(int(ad.Samplingrate), ad.Channels)
+	opusDecoder, err := opus.NewDecoder(int(ad.Samplingrate), ad.AudioStream.Channels)
 
 	if err != nil || opusDecoder == nil {
 		fmt.Println(err)
@@ -163,25 +171,40 @@ func PlayerSync(ad AudioDevice) {
 
 		// write received audio data into the ring buffer
 		case msg := <-ad.ToDeserialize:
-			msg.EnqueuedTs = time.Now()
+			// msg.EnqueuedTs = time.Now()
 			r.Enqueue(msg)
 
 		default:
 			data := r.Dequeue()
 			// check if new data is available in the ring buffer
-			if data != nil {
-				// err := d.DeserializeAudioMsg(data.([]byte))
-				ts := data.(comms.IOMsg)
-				err := d.DeserializeAudioMsg(ts.Data)
-				fmt.Println("Delta MQTT:", time.Since(ts.MQTTts).Nanoseconds()/1000000)
-				fmt.Println("Delta Enqueue:", time.Since(ts.EnqueuedTs).Nanoseconds()/1000000)
-				if err != nil {
-					fmt.Println(err)
+			av, _ := stream.AvailableToWrite()
+			if av > 0 {
+				// fmt.Println("av to write", av)
+				if data != nil {
+					// err := d.DeserializeAudioMsg(data.([]byte))
+					ts := data.(comms.IOMsg)
+					err := d.DeserializeAudioMsg(ts.Data)
+					if err != nil {
+						fmt.Println(err)
+					} else {
+						fmt.Println("Start write", time.Now().Format(time.StampMilli))
+						if err := stream.Write(); err != nil {
+							fmt.Println("data write", err)
+						}
+						fmt.Println("Finished write", time.Now().Format(time.StampMilli))
+					}
 				} else {
-					stream.Write()
+					for i := 0; i < len(ad.out); i++ {
+						ad.out[i] = 0
+					}
+					fmt.Println("ad.out", len(ad.out))
+					log.Println("Start writing")
+					if err := stream.Write(); err != nil {
+						fmt.Println("empty write", err)
+					}
+					log.Println("Stop writing")
+					time.Sleep(time.Millisecond * 3)
 				}
-			} else {
-				time.Sleep(time.Microsecond * 1000)
 			}
 		}
 	}
