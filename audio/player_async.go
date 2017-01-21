@@ -151,7 +151,7 @@ func PlayerASync(ad AudioDevice) {
 			ad.WaitGroup.Done()
 			return
 
-		// Server Only
+		// Used in the Server
 		case <-txUserResetTicker.C:
 			d.muTx.Lock()
 			// clear the tx user lock if nobody transmitted during the last 500ms
