@@ -87,12 +87,6 @@ func (d *deserializer) DecodeOpusAudioMsg(msg *sbAudio.AudioData) error {
 	lenFrame := lenSample * d.AudioStream.Channels
 	lenBuffer := len(d.out)
 
-	deltaUs := time.Since(ts).Nanoseconds() / 1000
-
-	if deltaUs > 100 {
-		log.Println("opus Encoding", deltaUs, "us")
-	}
-
 	if lenBuffer != lenFrame {
 		log.Println("sample != buffer")
 	}
