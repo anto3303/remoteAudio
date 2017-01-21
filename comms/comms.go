@@ -56,6 +56,8 @@ const (
 
 func MqttClient(s MqttSettings) {
 
+	defer s.WaitGroup.Done()
+
 	// mqtt.DEBUG = log.New(os.Stderr, "DEBUG - ", log.LstdFlags)
 	// mqtt.CRITICAL = log.New(os.Stderr, "CRITICAL - ", log.LstdFlags)
 	// mqtt.WARN = log.New(os.Stderr, "WARN - ", log.LstdFlags)
@@ -129,7 +131,6 @@ func MqttClient(s MqttSettings) {
 		case <-shutdownCh:
 			log.Println("Disconnecting from MQTT Broker")
 			client.Disconnect(0)
-			s.WaitGroup.Done()
 			return
 		case msg := <-s.ToWire:
 			token := client.Publish(msg.Topic, msg.Qos, msg.Retain, msg.Data)

@@ -124,6 +124,7 @@ func mqttAudioServer() {
 	// Event PubSub
 	evPS := pubsub.New(1)
 
+	// WaitGroup to coordinate a graceful shutdown
 	var wg sync.WaitGroup
 
 	// mqtt Last Will Message
@@ -181,6 +182,8 @@ func mqttAudioServer() {
 		},
 	}
 
+	wg.Add(3) //recorder, player and MQTT
+
 	go events.WatchSystemEvents(evPS)
 	go audio.PlayerASync(player)
 	go audio.RecorderAsync(recorder)
@@ -209,21 +212,18 @@ func mqttAudioServer() {
 				if err := updateStatus(&status, toWireCh); err != nil {
 					fmt.Println(err)
 				}
-				// fmt.Println("updated online status")
 			}
 		case ev := <-recordAudioOnCh:
 			status.recordAudioOn = ev.(bool)
 			if err := updateStatus(&status, toWireCh); err != nil {
 				fmt.Println(err)
 			}
-			// fmt.Println("updated recordAudioOn status to", status.recordAudioOn)
 
 		case ev := <-txUserCh:
 			status.txUser = ev.(string)
 			if err := updateStatus(&status, toWireCh); err != nil {
 				fmt.Println(err)
 			}
-			// fmt.Println("updated txUser to", status.txUser)
 
 		case data := <-toDeserializeAudioReqCh:
 
