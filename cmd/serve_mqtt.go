@@ -118,7 +118,7 @@ func mqttAudioServer() {
 
 	toWireCh := make(chan comms.IOMsg, 20)
 	toSerializeAudioDataCh := make(chan comms.IOMsg, 20)
-	toDeserializeAudioDataCh := make(chan comms.IOMsg, 10)
+	toDeserializeAudioDataCh := make(chan []byte, 10)
 	toDeserializeAudioReqCh := make(chan comms.IOMsg, 10)
 
 	// Event PubSub

@@ -2,7 +2,6 @@ package audio
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -22,6 +21,7 @@ type deserializer struct {
 	toPlay      chan []float32
 	muRing      sync.Mutex
 	ring        ringBuffer.Ring
+	ringCounter int
 }
 
 // DeserializeAudioMsg will deserialize a Protocol Buffers message containing
@@ -38,26 +38,26 @@ func (d *deserializer) DeserializeAudioMsg(data []byte) error {
 	}
 
 	// let's make sure that we only accept audio data from the correct user
-	d.muTx.Lock()
-	txUser := msg.GetUserId()
+	// d.muTx.Lock()
+	// txUser := msg.GetUserId()
 
-	switch d.txUser {
-	// Nobody is currently transmitting
-	case "":
-		d.txUser = txUser
-		d.txTimestamp = time.Now()
-		d.muTx.Unlock()
-	// tx is assigned to a user; only accept new audio data from him
-	case txUser:
-		d.txTimestamp = time.Now()
-		d.muTx.Unlock()
-	// return because someone else is transmitting
-	default:
-		errMsg := fmt.Sprintf("%s tries to send; however tx blocked by %s",
-			txUser, d.txUser)
-		d.muTx.Unlock()
-		return errors.New(errMsg)
-	}
+	// switch d.txUser {
+	// // Nobody is currently transmitting
+	// case "":
+	// 	d.txUser = txUser
+	// 	d.txTimestamp = time.Now()
+	// 	d.muTx.Unlock()
+	// // tx is assigned to a user; only accept new audio data from him
+	// case txUser:
+	// 	d.txTimestamp = time.Now()
+	// 	d.muTx.Unlock()
+	// // return because someone else is transmitting
+	// default:
+	// 	errMsg := fmt.Sprintf("%s tries to send; however tx blocked by %s",
+	// 		txUser, d.txUser)
+	// 	d.muTx.Unlock()
+	// 	return errors.New(errMsg)
+	// }
 
 	// select the codec (if field has not been set, it will default to OPUS)
 	switch msg.GetCodec() {
@@ -97,9 +97,9 @@ func (d *deserializer) DecodeOpusAudioMsg(msg *sbAudio.AudioData) error {
 	// } else {
 	// d.out = d.opusBuffer[:lenFrame]
 	// d.toPlay <- d.opusBuffer[:lenFrame]
-	d.muRing.Lock()
+	// d.muRing.Lock()
 	d.ring.Enqueue(d.opusBuffer[:lenFrame])
-	d.muRing.Unlock()
+	// d.muRing.Unlock()
 	// 	fmt.Println("resized buffer")
 	// }
 
@@ -108,7 +108,7 @@ func (d *deserializer) DecodeOpusAudioMsg(msg *sbAudio.AudioData) error {
 
 // DecodePCMAudioMsg conditions an int32 PCM audio frame according to the
 // needs of the local audio stream (channels and/or sampling rate)
-func (ad *AudioDevice) DecodePCMAudioMsg(msg *sbAudio.AudioData) error {
+func (ad *deserializer) DecodePCMAudioMsg(msg *sbAudio.AudioData) error {
 
 	var samplingrate float64
 	var channels, bitdepth int
@@ -173,9 +173,11 @@ func (ad *AudioDevice) DecodePCMAudioMsg(msg *sbAudio.AudioData) error {
 		if err != nil {
 			return err
 		}
-		ad.out = resampledAudio
+		ad.ring.Enqueue(resampledAudio)
+		// ad.out = resampledAudio
 	} else {
-		ad.out = convertedAudio
+		// ad.out = convertedAudio
+		ad.ring.Enqueue(convertedAudio)
 	}
 
 	return nil

@@ -19,7 +19,7 @@ type MqttSettings struct {
 	BrokerPort               int
 	ClientID                 string
 	Topics                   []string
-	ToDeserializeAudioDataCh chan IOMsg
+	ToDeserializeAudioDataCh chan []byte
 	ToDeserializeAudioReqCh  chan IOMsg
 	ToDeserializeAudioRespCh chan IOMsg
 	ToWire                   chan IOMsg
@@ -66,17 +66,15 @@ func MqttClient(s MqttSettings) {
 	var msgHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 
 		if strings.Contains(msg.Topic(), "audio/audio") {
-			audioMsg := IOMsg{
-				Data: msg.Payload()[:len(msg.Payload())],
-			}
-			// audioMsg.MQTTts = time.Now()
-			s.ToDeserializeAudioDataCh <- audioMsg
+
+			s.ToDeserializeAudioDataCh <- msg.Payload()[:len(msg.Payload())]
 
 		} else if strings.Contains(msg.Topic(), "request") {
-			audioReqMsg := IOMsg{
+
+			audioRespMsg := IOMsg{
 				Data: msg.Payload()[:len(msg.Payload())],
 			}
-			s.ToDeserializeAudioReqCh <- audioReqMsg
+			s.ToDeserializeAudioReqCh <- audioRespMsg
 
 		} else if strings.Contains(msg.Topic(), "response") {
 			audioRespMsg := IOMsg{

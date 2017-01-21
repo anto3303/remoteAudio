@@ -79,8 +79,9 @@ func PlayerASync(ad AudioDevice) {
 
 	streamParm := portaudio.StreamParameters{
 		FramesPerBuffer: ad.FramesPerBuffer,
-		Output:          streamDeviceParam,
-		SampleRate:      ad.Samplingrate,
+		// FramesPerBuffer: portaudio.FramesPerBufferUnspecified,
+		Output:     streamDeviceParam,
+		SampleRate: ad.Samplingrate,
 	}
 
 	var stream *portaudio.Stream
@@ -93,6 +94,7 @@ func PlayerASync(ad AudioDevice) {
 	d.toPlay = make(chan []float32, 5)
 	d.ring = ringBuffer.Ring{}
 	d.ring.SetCapacity(10)
+	d.ringCounter = 0
 	d.muRing = sync.Mutex{}
 
 	// initialize the Opus Decoder
@@ -179,41 +181,51 @@ func PlayerASync(ad AudioDevice) {
 			// fmt.Println("av to write", av)
 
 			// err := d.DeserializeAudioMsg(data.([]byte))
-			err := d.DeserializeAudioMsg(msg.Data)
+			err := d.DeserializeAudioMsg(msg)
 			if err != nil {
 				fmt.Println(err)
 			}
+			// d.muRing.Lock()
+			// d.ringCounter += 1
+			// d.muRing.Unlock()
 			// d.toPlay <- ad.out
 		}
 	}
 }
 
 func (d *deserializer) playCb(in []float32, iTime portaudio.StreamCallbackTimeInfo, iFlags portaudio.StreamCallbackFlags) {
-	switch iFlags {
-	case portaudio.OutputUnderflow:
-		fmt.Println("OutputUnderflow")
-		return // move on!
-	case portaudio.OutputOverflow:
-		fmt.Println("OutputOverflow")
-		return // move on!
-	}
+	// switch iFlags {
+	// case portaudio.OutputUnderflow:
+	// 	fmt.Println("OutputUnderflow")
+	// 	return // move on!
+	// case portaudio.OutputOverflow:
+	// 	fmt.Println("OutputOverflow")
+	// 	return // move on!
+	// }
+	ts := time.Now()
 
-	d.muRing.Lock()
+	// d.muRing.Lock()
 	data := d.ring.Dequeue()
-	d.muRing.Unlock()
+	// counter := d.ringCounter
+	// d.ringCounter--
+	// d.muRing.Unlock()
+
+	// log.Println("Ring Counter", counter)
+	// log.Println("len in", len(in))
 
 	if data != nil {
 		audioData := data.([]float32)
-		for i := 0; i < len(in); i++ {
-			in[i] = audioData[i]
-		}
+		copy(in, audioData)
+		// for i := 0; i < len(in); i++ {
+		// 	in[i] = audioData[i]
+		// }
 	} else {
 		// log.Println("write silence")
 		for i := 0; i < len(in); i++ {
 			in[i] = 0
 		}
 	}
-
+	log.Println("Callback exec", time.Since(ts).Nanoseconds()/1000, "us")
 	// log.Println("len Play Buffer:", len(d.toPlay))
 
 	// select {
