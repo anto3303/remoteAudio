@@ -2,6 +2,7 @@ package audio
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -19,10 +20,8 @@ type deserializer struct {
 	muTx        sync.Mutex
 	txUser      string
 	txTimestamp time.Time
-	toPlay      chan []float32
 	muRing      sync.Mutex
 	ring        ringBuffer.Ring
-	ringCounter int
 }
 
 // DeserializeAudioMsg will deserialize a Protocol Buffers message containing
@@ -39,26 +38,26 @@ func (d *deserializer) DeserializeAudioMsg(data []byte) error {
 	}
 
 	// let's make sure that we only accept audio data from the correct user
-	// d.muTx.Lock()
-	// txUser := msg.GetUserId()
+	d.muTx.Lock()
+	txUser := msg.GetUserId()
 
-	// switch d.txUser {
-	// // Nobody is currently transmitting
-	// case "":
-	// 	d.txUser = txUser
-	// 	d.txTimestamp = time.Now()
-	// 	d.muTx.Unlock()
-	// // tx is assigned to a user; only accept new audio data from him
-	// case txUser:
-	// 	d.txTimestamp = time.Now()
-	// 	d.muTx.Unlock()
-	// // return because someone else is transmitting
-	// default:
-	// 	errMsg := fmt.Sprintf("%s tries to send; however tx blocked by %s",
-	// 		txUser, d.txUser)
-	// 	d.muTx.Unlock()
-	// 	return errors.New(errMsg)
-	// }
+	switch d.txUser {
+	// Nobody is currently transmitting
+	case "":
+		d.txUser = txUser
+		d.txTimestamp = time.Now()
+		d.muTx.Unlock()
+	// tx is assigned to a user; only accept new audio data from him
+	case txUser:
+		d.txTimestamp = time.Now()
+		d.muTx.Unlock()
+	// return because someone else is transmitting
+	default:
+		errMsg := fmt.Sprintf("%s tries to send; however tx blocked by %s",
+			txUser, d.txUser)
+		d.muTx.Unlock()
+		return errors.New(errMsg)
+	}
 
 	// select the codec (if field has not been set, it will default to OPUS)
 	switch msg.GetCodec() {
@@ -85,31 +84,27 @@ func (d *deserializer) DecodeOpusAudioMsg(msg *sbAudio.AudioData) error {
 		return err
 	}
 
+	lenFrame := lenSample * d.AudioStream.Channels
+	lenBuffer := len(d.out)
+
 	deltaUs := time.Since(ts).Nanoseconds() / 1000
 
 	if deltaUs > 100 {
 		log.Println("opus Encoding", deltaUs, "us")
 	}
 
-	lenFrame := lenSample * d.AudioDevice.Channels
-	// lenBuffer := len(d.out)
+	if lenBuffer != lenFrame {
+		log.Println("sample != buffer")
+	}
 
-	// fmt.Println("sample length", lenSample)
-	// fmt.Println("frame length:", lenFrame)
-	// fmt.Println("buffer length:", lenBuffer)
+	buf := make([]float32, lenFrame)
+	for i := 0; i < lenFrame; i++ {
+		buf[i] = d.opusBuffer[i]
+	}
 
-	// if lenBuffer == lenFrame {
-	// 	for i := 0; i < lenFrame; i++ {
-	// 		d.out[i] = d.opusBuffer[i]
-	// 	}
-	// } else {
-	// d.out = d.opusBuffer[:lenFrame]
-	// d.toPlay <- d.opusBuffer[:lenFrame]
-	// d.muRing.Lock()
-	d.ring.Enqueue(d.opusBuffer[:lenFrame])
-	// d.muRing.Unlock()
-	// 	fmt.Println("resized buffer")
-	// }
+	d.muRing.Lock()
+	d.ring.Enqueue(buf)
+	d.muRing.Unlock()
 
 	return nil
 }

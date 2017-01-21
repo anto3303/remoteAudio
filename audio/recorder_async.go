@@ -31,7 +31,7 @@ func RecorderAsync(ad AudioDevice) {
 	// this is necessary to avoid a SIGSEGV in case
 	// DefaultInputDevice is accessed without portaudio
 	// being completely initialized
-	time.Sleep(time.Millisecond * 200)
+	time.Sleep(time.Millisecond * 300)
 
 	var deviceInfo *portaudio.DeviceInfo
 	var err error

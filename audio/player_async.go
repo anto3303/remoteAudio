@@ -31,7 +31,7 @@ func PlayerASync(ad AudioDevice) {
 	// this is necessary to avoid a SIGSEGV in case
 	// DefaultOutputDevice is accessed without portaudio
 	// being completely initialized
-	time.Sleep(time.Millisecond * 200)
+	time.Sleep(time.Millisecond * 300)
 
 	ad.out = make([]float32, ad.FramesPerBuffer*ad.Channels)
 
@@ -45,12 +45,6 @@ func PlayerASync(ad AudioDevice) {
 
 	var deviceInfo *portaudio.DeviceInfo
 	var err error
-
-	audioBufferSize := viper.GetInt("audio.rx_buffer_length")
-
-	// initialize audio (ring) buffer
-	r := ringBuffer.Ring{}
-	r.SetCapacity(audioBufferSize)
 
 	// select Playback Audio Device
 	if ad.DeviceName == "default" {
@@ -86,16 +80,17 @@ func PlayerASync(ad AudioDevice) {
 
 	var stream *portaudio.Stream
 
+	audioBufferSize := viper.GetInt("audio.rx_buffer_length")
+
 	// the deserializer struct is mainly used to cache variables which have
 	// to be read / set during the deserialization
 	var d deserializer
 	d.AudioDevice = &ad
 	d.txTimestamp = time.Now()
-	d.toPlay = make(chan []float32, 5)
-	d.ring = ringBuffer.Ring{}
-	d.ring.SetCapacity(10)
-	d.ringCounter = 0
+	// initialize audio (ring) buffer
 	d.muRing = sync.Mutex{}
+	d.ring = ringBuffer.Ring{}
+	d.ring.SetCapacity(audioBufferSize)
 
 	// initialize the Opus Decoder
 	opusDecoder, err := opus.NewDecoder(int(ad.Samplingrate), ad.AudioStream.Channels)
@@ -143,8 +138,7 @@ func PlayerASync(ad AudioDevice) {
 	// Tickers to check if we still receive audio from a certain user.
 	// This is needed on the server to release the "lock" and allow
 	// others to transmit
-	txUserResetTicker := time.NewTicker(1 * time.Second)
-	txMonitorTicker := time.NewTicker(100 * time.Millisecond)
+	txUserResetTicker := time.NewTicker(100 * time.Millisecond)
 
 	// Everything has been set up, let's start execution
 
@@ -157,90 +151,54 @@ func PlayerASync(ad AudioDevice) {
 			ad.WaitGroup.Done()
 			return
 
-		// clear the tx user lock if nobody transmitted during the last 500ms
+		// Server Only
 		case <-txUserResetTicker.C:
 			d.muTx.Lock()
+			// clear the tx user lock if nobody transmitted during the last 500ms
 			if time.Since(d.txTimestamp) > 500*time.Millisecond {
 				d.txUser = ""
 			}
-			d.muTx.Unlock()
 
-		// check if the tx user has changed
-		case <-txMonitorTicker.C:
-			d.muTx.Lock()
-
+			// check if the tx user has changed and publish changes
 			if txUser != d.txUser {
 				ad.Events.Pub(d.txUser, events.TxUser)
 				txUser = d.txUser
 			}
 			d.muTx.Unlock()
 
-		// write received audio data into the ring buffer
+		// deserialize and write received audio data into the ring buffer
 		case msg := <-ad.ToDeserialize:
-			// check if new data is available in the ring buffer
-			// fmt.Println("av to write", av)
-
-			// err := d.DeserializeAudioMsg(data.([]byte))
 			err := d.DeserializeAudioMsg(msg)
 			if err != nil {
 				fmt.Println(err)
 			}
-			// d.muRing.Lock()
-			// d.ringCounter += 1
-			// d.muRing.Unlock()
-			// d.toPlay <- ad.out
 		}
 	}
 }
 
+// playCb is the playback which is called by portaudio to write the audio
+// samples to the speaker
 func (d *deserializer) playCb(in []float32, iTime portaudio.StreamCallbackTimeInfo, iFlags portaudio.StreamCallbackFlags) {
-	// switch iFlags {
-	// case portaudio.OutputUnderflow:
-	// 	fmt.Println("OutputUnderflow")
-	// 	return // move on!
-	// case portaudio.OutputOverflow:
-	// 	fmt.Println("OutputOverflow")
-	// 	return // move on!
-	// }
-	// ts := time.Now()
+	switch iFlags {
+	case portaudio.OutputUnderflow:
+		fmt.Println("OutputUnderflow")
+		return // move on!
+	case portaudio.OutputOverflow:
+		fmt.Println("OutputOverflow")
+		return // move on!
+	}
 
-	// d.muRing.Lock()
+	//pull data from Ringbuffer
+	d.muRing.Lock()
 	data := d.ring.Dequeue()
-	// counter := d.ringCounter
-	// d.ringCounter--
-	// d.muRing.Unlock()
-
-	// log.Println("Ring Counter", counter)
-	// log.Println("len in", len(in))
+	d.muRing.Unlock()
 
 	if data != nil {
 		audioData := data.([]float32)
-		copy(in, audioData)
-		// for i := 0; i < len(in); i++ {
-		// 	in[i] = audioData[i]
-		// }
+		copy(in, audioData) //copy data into buffer
 	} else {
-		// log.Println("write silence")
 		for i := 0; i < len(in); i++ {
 			in[i] = 0
 		}
 	}
-	// log.Println("Callback exec", time.Since(ts).Nanoseconds()/1000, "us")
-	// log.Println("len Play Buffer:", len(d.toPlay))
-
-	// select {
-	// case data := <-d.toPlay:
-	// 	if len(in) != len(data) {
-	// 		log.Printf("unequal buffers! in: % bytes, sample: % bytes\n", len(in), len(data))
-	// 	}
-	// 	for i := 0; i < len(in); i++ {
-	// 		in[i] = data[i]
-	// 	}
-	// default:
-	// 	// write silence
-	// 	log.Println("write silence")
-	// 	for i := 0; i < len(in); i++ {
-	// 		in[i] = 0
-	// 	}
-	// }
 }
