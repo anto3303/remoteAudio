@@ -8,6 +8,7 @@ import (
 
 	sbAudio "github.com/dh1tw/remoteAudio/sb_audio"
 	"github.com/gogo/protobuf/proto"
+	ringBuffer "github.com/zfjagann/golang-ring"
 	"gopkg.in/hraban/opus.v2"
 )
 
@@ -19,6 +20,8 @@ type deserializer struct {
 	txUser      string
 	txTimestamp time.Time
 	toPlay      chan []float32
+	muRing      sync.Mutex
+	ring        ringBuffer.Ring
 }
 
 // DeserializeAudioMsg will deserialize a Protocol Buffers message containing
@@ -93,7 +96,10 @@ func (d *deserializer) DecodeOpusAudioMsg(msg *sbAudio.AudioData) error {
 	// 	}
 	// } else {
 	// d.out = d.opusBuffer[:lenFrame]
-	d.toPlay <- d.opusBuffer[:lenFrame]
+	// d.toPlay <- d.opusBuffer[:lenFrame]
+	d.muRing.Lock()
+	d.ring.Enqueue(d.opusBuffer[:lenFrame])
+	d.muRing.Unlock()
 	// 	fmt.Println("resized buffer")
 	// }
 

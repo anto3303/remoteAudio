@@ -3,6 +3,7 @@ package audio
 import (
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/dh1tw/gosamplerate"
@@ -90,6 +91,9 @@ func PlayerASync(ad AudioDevice) {
 	d.AudioDevice = &ad
 	d.txTimestamp = time.Now()
 	d.toPlay = make(chan []float32, 5)
+	d.ring = ringBuffer.Ring{}
+	d.ring.SetCapacity(10)
+	d.muRing = sync.Mutex{}
 
 	// initialize the Opus Decoder
 	opusDecoder, err := opus.NewDecoder(int(ad.Samplingrate), ad.AudioStream.Channels)
@@ -194,19 +198,37 @@ func (d *deserializer) playCb(in []float32, iTime portaudio.StreamCallbackTimeIn
 		return // move on!
 	}
 
-	select {
-	case data := <-d.toPlay:
-		if len(in) != len(data) {
-			log.Printf("unequal buffers! in: % bytes, sample: % bytes\n", len(in), len(data))
-		}
+	d.muRing.Lock()
+	data := d.ring.Dequeue()
+	d.muRing.Unlock()
+
+	if data != nil {
+		audioData := data.([]float32)
 		for i := 0; i < len(in); i++ {
-			in[i] = data[i]
+			in[i] = audioData[i]
 		}
-	default:
-		// write silence
-		log.Println("write silence")
+	} else {
+		// log.Println("write silence")
 		for i := 0; i < len(in); i++ {
 			in[i] = 0
 		}
 	}
+
+	// log.Println("len Play Buffer:", len(d.toPlay))
+
+	// select {
+	// case data := <-d.toPlay:
+	// 	if len(in) != len(data) {
+	// 		log.Printf("unequal buffers! in: % bytes, sample: % bytes\n", len(in), len(data))
+	// 	}
+	// 	for i := 0; i < len(in); i++ {
+	// 		in[i] = data[i]
+	// 	}
+	// default:
+	// 	// write silence
+	// 	log.Println("write silence")
+	// 	for i := 0; i < len(in); i++ {
+	// 		in[i] = 0
+	// 	}
+	// }
 }
