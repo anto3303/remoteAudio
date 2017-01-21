@@ -187,23 +187,21 @@ func PlayerSync(ad AudioDevice) {
 					if err != nil {
 						fmt.Println(err)
 					} else {
-						fmt.Println("Start write", time.Now().Format(time.StampMilli))
+						// fmt.Println("Start write", time.Now().Format(time.StampMilli))
 						if err := stream.Write(); err != nil {
 							fmt.Println("data write", err)
 						}
-						fmt.Println("Finished write", time.Now().Format(time.StampMilli))
+						// fmt.Println("Finished write", time.Now().Format(time.StampMilli))
 					}
 				} else {
-					for i := 0; i < len(ad.out); i++ {
-						ad.out[i] = 0
-					}
-					fmt.Println("ad.out", len(ad.out))
+					ad.out = make([]float32, 960)
+					// fmt.Println("ad.out", len(ad.out))
 					log.Println("Start writing")
 					if err := stream.Write(); err != nil {
 						fmt.Println("empty write", err)
 					}
 					log.Println("Stop writing")
-					time.Sleep(time.Millisecond * 3)
+					// time.Sleep(time.Millisecond * 20)
 				}
 			}
 		}
