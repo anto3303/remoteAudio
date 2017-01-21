@@ -2,6 +2,7 @@ package audio
 
 import (
 	"errors"
+	"log"
 	"sync"
 	"time"
 
@@ -78,9 +79,16 @@ func (d *deserializer) DeserializeAudioMsg(data []byte) error {
 // encoded audio frame.
 func (d *deserializer) DecodeOpusAudioMsg(msg *sbAudio.AudioData) error {
 
+	ts := time.Now()
 	lenSample, err := d.opusDecoder.DecodeFloat32(msg.GetAudioRaw(), d.opusBuffer)
 	if err != nil {
 		return err
+	}
+
+	deltaUs := time.Since(ts).Nanoseconds() / 1000
+
+	if deltaUs > 100 {
+		log.Println("opus Encoding", deltaUs, "us")
 	}
 
 	lenFrame := lenSample * d.AudioDevice.Channels

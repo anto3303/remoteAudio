@@ -202,7 +202,7 @@ func (d *deserializer) playCb(in []float32, iTime portaudio.StreamCallbackTimeIn
 	// 	fmt.Println("OutputOverflow")
 	// 	return // move on!
 	// }
-	ts := time.Now()
+	// ts := time.Now()
 
 	// d.muRing.Lock()
 	data := d.ring.Dequeue()
@@ -225,7 +225,7 @@ func (d *deserializer) playCb(in []float32, iTime portaudio.StreamCallbackTimeIn
 			in[i] = 0
 		}
 	}
-	log.Println("Callback exec", time.Since(ts).Nanoseconds()/1000, "us")
+	// log.Println("Callback exec", time.Since(ts).Nanoseconds()/1000, "us")
 	// log.Println("len Play Buffer:", len(d.toPlay))
 
 	// select {
