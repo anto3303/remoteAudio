@@ -182,7 +182,7 @@ func mqttAudioServer() {
 	}
 
 	go events.WatchSystemEvents(evPS)
-	go audio.PlayerSync(player)
+	go audio.PlayerASync(player)
 	go audio.RecorderAsync(recorder)
 	// give the Audio Streams time to setup and start
 	time.Sleep(time.Millisecond * 200)

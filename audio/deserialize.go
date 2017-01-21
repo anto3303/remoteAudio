@@ -18,6 +18,7 @@ type deserializer struct {
 	muTx        sync.Mutex
 	txUser      string
 	txTimestamp time.Time
+	toPlay      chan []float32
 }
 
 // DeserializeAudioMsg will deserialize a Protocol Buffers message containing
@@ -91,7 +92,8 @@ func (d *deserializer) DecodeOpusAudioMsg(msg *sbAudio.AudioData) error {
 	// 		d.out[i] = d.opusBuffer[i]
 	// 	}
 	// } else {
-	d.out = d.opusBuffer[:lenFrame]
+	// d.out = d.opusBuffer[:lenFrame]
+	d.toPlay <- d.opusBuffer[:lenFrame]
 	// 	fmt.Println("resized buffer")
 	// }
 
