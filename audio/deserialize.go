@@ -78,7 +78,6 @@ func (d *deserializer) DeserializeAudioMsg(data []byte) error {
 // encoded audio frame.
 func (d *deserializer) DecodeOpusAudioMsg(msg *sbAudio.AudioData) error {
 
-	ts := time.Now()
 	lenSample, err := d.opusDecoder.DecodeFloat32(msg.GetAudioRaw(), d.opusBuffer)
 	if err != nil {
 		return err
