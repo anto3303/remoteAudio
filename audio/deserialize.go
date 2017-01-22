@@ -3,6 +3,7 @@ package audio
 import (
 	"errors"
 	"fmt"
+	"math"
 	"sync"
 	"time"
 
@@ -14,13 +15,15 @@ import (
 
 type deserializer struct {
 	*AudioDevice
-	opusDecoder *opus.Decoder
-	opusBuffer  []float32
-	muTx        sync.Mutex
-	txUser      string
-	txTimestamp time.Time
-	muRing      sync.Mutex
-	ring        ringBuffer.Ring
+	opusDecoder    *opus.Decoder
+	opusBuffer     []float32
+	muTx           sync.Mutex
+	txUser         string
+	txTimestamp    time.Time
+	muRing         sync.Mutex
+	ring           ringBuffer.Ring
+	opusFrameCache []float32
+	pcmFrameCache  []float32
 }
 
 // // deserialize and write received audio data into the ring buffer
@@ -47,6 +50,8 @@ func (d *deserializer) DeserializeAudioMsg(data []byte) error {
 		return err
 	}
 
+	//*********** ONLY NEED FOR SERVER *************//
+
 	// let's make sure that we only accept audio data from the correct user
 	d.muTx.Lock()
 	txUser := msg.GetUserId()
@@ -68,6 +73,8 @@ func (d *deserializer) DeserializeAudioMsg(data []byte) error {
 		d.muTx.Unlock()
 		return errors.New(errMsg)
 	}
+
+	//*********** ONLY NEED FOR SERVER *************//
 
 	// select the codec (if field has not been set, it will default to OPUS)
 	switch msg.GetCodec() {
@@ -98,16 +105,59 @@ func (d *deserializer) DecodeOpusAudioMsg(msg *sbAudio.AudioData) error {
 	}
 
 	lenFrame := lenSample * int(msg.GetChannels())
+	lenBuffer := len(d.out)
+	lenCache := len(d.opusFrameCache)
 
-	//make a new array and copy the data into the array
-	buf := make([]float32, lenFrame)
-	for i := 0; i < lenFrame; i++ {
-		buf[i] = d.opusBuffer[i]
+	data := make([]float32, lenFrame+lenCache)
+
+	// combine cached frames with new data
+	if lenCache > 0 {
+		copy(data, d.opusFrameCache)
+		// data = append(data, d.opusBuffer[:lenFrame]...)
+		for i := 0; i < lenFrame; i++ {
+			data[lenCache+i] = d.opusBuffer[i]
+		}
+	} else {
+		copy(data, d.opusBuffer[:lenFrame])
 	}
 
-	d.muRing.Lock()
-	d.ring.Enqueue(buf)
-	d.muRing.Unlock()
+	lenData := len(data)
+	// fmt.Println("lenSample", lenSample)
+	// fmt.Println("lenFrame", lenFrame)
+	// fmt.Println("lenCache", lenCache)
+	// fmt.Println("lenData", lenData)
+
+	// received frame + cache is larger than our buffer
+	if lenData >= lenBuffer {
+		n, fraction := math.Modf(float64(lenData) / float64(lenBuffer))
+		// fmt.Println("n", n, "faction", fraction)
+		// fill the buffer
+		d.muRing.Lock()
+		for i := 0; i < int(n); i++ {
+			//make new buffer
+			buf := make([]float32, lenBuffer)
+			for j := 0; j < lenBuffer; j++ {
+				buf[j] = data[i*lenBuffer+j]
+			}
+			// queue the buffer for play
+			d.ring.Enqueue(buf)
+		}
+		d.muRing.Unlock()
+		// clear cache slice
+		d.opusFrameCache = d.opusFrameCache[len(d.opusFrameCache):]
+		// copy remainder into cache
+		if fraction != 0 {
+			for i := 0; i < lenData-lenFrame*int(n); i++ {
+				d.opusFrameCache = append(d.opusFrameCache, data[int(n)*lenFrame+i])
+			}
+
+		}
+		// cache + received frame is smaller than audio buffer; let's cache it.
+	} else {
+		for i := 0; i < lenData; i++ {
+			d.opusFrameCache = append(d.opusFrameCache, data[i])
+		}
+	}
 
 	return nil
 }
