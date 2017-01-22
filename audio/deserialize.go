@@ -100,11 +100,12 @@ func (d *deserializer) DecodeOpusAudioMsg(msg *sbAudio.AudioData) error {
 		return err
 	}
 
-	if msg.Channels == nil {
-		return errors.New("Warning: Channel information missing for audio frame")
-	}
+	// if msg.Channels == nil {
+	// 	return errors.New("Warning: Channel information missing for audio frame")
+	// }
 
-	lenFrame := lenSample * int(msg.GetChannels())
+	// fmt.Println("Channels:", msg.GetChannels())
+	lenFrame := lenSample * d.Channels
 	lenBuffer := len(d.out)
 	lenCache := len(d.opusFrameCache)
 
