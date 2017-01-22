@@ -159,6 +159,7 @@ func mqttAudioServer() {
 		ToSerialize:   nil,
 		ToDeserialize: toDeserializeAudioDataCh,
 		Events:        evPS,
+		WaitGroup:     &wg,
 		AudioStream: audio.AudioStream{
 			DeviceName:      outputDeviceDeviceName,
 			FramesPerBuffer: audioFrameLength,
@@ -174,6 +175,7 @@ func mqttAudioServer() {
 		ToDeserialize:    nil,
 		AudioToWireTopic: serverAudioOutTopic,
 		Events:           evPS,
+		WaitGroup:        &wg,
 		AudioStream: audio.AudioStream{
 			DeviceName:      inputDeviceDeviceName,
 			FramesPerBuffer: audioFrameLength,
