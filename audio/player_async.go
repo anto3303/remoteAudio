@@ -35,10 +35,6 @@ func PlayerASync(ad AudioDevice) {
 
 	ad.out = make([]float32, ad.FramesPerBuffer*ad.Channels)
 
-	fmt.Println("Player Channels:", ad.Channels)
-	fmt.Println("Player Frames:", ad.FramesPerBuffer)
-	fmt.Println("Player Out Buffer:", len(ad.out))
-
 	//ad.out doesn't need to be initialized with a fixed buffer size
 	//since the slice will be copied from the incoming data
 	//and will therefore replay any buffer size
