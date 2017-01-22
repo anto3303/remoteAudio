@@ -141,6 +141,7 @@ func mqttAudioServer() {
 	}
 
 	settings := comms.MqttSettings{
+		WaitGroup:  &wg,
 		Transport:  "tcp",
 		BrokerURL:  mqttBrokerURL,
 		BrokerPort: mqttBrokerPort,
