@@ -64,12 +64,17 @@ func MqttClient(s MqttSettings) {
 	// mqtt.ERROR = log.New(os.Stderr, "ERROR - ", log.LstdFlags)
 
 	shutdownCh := s.Events.Sub(events.Shutdown)
+	forwardAudioCh := s.Events.Sub(events.ForwardAudio)
+
+	forwardAudio := false
 
 	var msgHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 
 		if strings.Contains(msg.Topic(), "audio/audio") {
 
-			s.ToDeserializeAudioDataCh <- msg.Payload()[:len(msg.Payload())]
+			if forwardAudio {
+				s.ToDeserializeAudioDataCh <- msg.Payload()[:len(msg.Payload())]
+			}
 
 		} else if strings.Contains(msg.Topic(), "request") {
 
@@ -135,6 +140,10 @@ func MqttClient(s MqttSettings) {
 		case msg := <-s.ToWire:
 			token := client.Publish(msg.Topic, msg.Qos, msg.Retain, msg.Data)
 			token.Wait()
+
+		//indicates if audio data should be forwarded for decoding & play
+		case ev := <-forwardAudioCh:
+			forwardAudio = ev.(bool)
 		}
 	}
 }

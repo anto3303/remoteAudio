@@ -52,14 +52,12 @@ func PlayerASync(ad AudioDevice) {
 		if err != nil {
 			fmt.Println("unable to find default playback sound device")
 			fmt.Println(err)
-			ad.WaitGroup.Done()
 			return // exit go routine
 		}
 	} else {
 		if err := ad.IdentifyDevice(); err != nil {
 			fmt.Printf("unable to find recording sound device %s\n", ad.DeviceName)
 			fmt.Println(err)
-			ad.WaitGroup.Done()
 			return
 		}
 	}
@@ -97,7 +95,6 @@ func PlayerASync(ad AudioDevice) {
 
 	if err != nil || opusDecoder == nil {
 		fmt.Println(err)
-		ad.WaitGroup.Done()
 		return
 	}
 	d.opusDecoder = opusDecoder
@@ -108,7 +105,6 @@ func PlayerASync(ad AudioDevice) {
 	if err != nil {
 		fmt.Printf("unable to open playback audio stream on device %s\n", ad.DeviceName)
 		fmt.Println(err)
-		ad.WaitGroup.Done()
 		return // exit go routine
 	}
 	defer stream.Close()
@@ -118,7 +114,6 @@ func PlayerASync(ad AudioDevice) {
 	if err != nil {
 		fmt.Println("unable to create resampler")
 		fmt.Println(err)
-		ad.WaitGroup.Done()
 		return // exit go routine
 	}
 	defer gosamplerate.Delete(ad.PCMSamplerateConverter)
@@ -127,10 +122,11 @@ func PlayerASync(ad AudioDevice) {
 	if err = stream.Start(); err != nil {
 		fmt.Printf("unable to start playback audio stream on device %s\n", ad.DeviceName)
 		fmt.Println(err)
-		ad.WaitGroup.Done()
 		return // exit go routine
 	}
 	defer stream.Stop()
+
+	bufferFrameSizeChangeCh := ad.Events.Sub(events.NewAudioFrameSize)
 
 	// cache holding the id of user from which we currently receive audio
 	txUser := ""
@@ -141,6 +137,7 @@ func PlayerASync(ad AudioDevice) {
 	txUserResetTicker := time.NewTicker(100 * time.Millisecond)
 
 	// Everything has been set up, let's start execution
+	ad.Events.Pub(true, events.ForwardAudio)
 
 	for {
 		select {
@@ -148,7 +145,6 @@ func PlayerASync(ad AudioDevice) {
 		// shutdown application gracefully
 		case <-shutdownCh:
 			log.Println("Shutdown Player")
-			ad.WaitGroup.Done()
 			return
 
 		// Used in the Server
@@ -165,6 +161,35 @@ func PlayerASync(ad AudioDevice) {
 				txUser = d.txUser
 			}
 			d.muTx.Unlock()
+
+		// When the size of the received audio frame is different from our
+		// buffer size, we have to resize and restart the stream. This causes
+		// additional latency on startup! Should be avoided.
+		case ev := <-bufferFrameSizeChangeCh:
+			ad.Events.Pub(false, events.ForwardAudio)
+			newBufSize := ev.(int)
+			stream.Abort()
+			stream.Close()
+			log.Printf("WARNING: Samplerate has changed from %d, to %d", len(ad.out), newBufSize)
+			// new buffer with new size
+			ad.out = make([]float32, newBufSize)
+			// update stream parameters
+			streamParm.FramesPerBuffer = newBufSize / 2
+
+			stream, err = portaudio.OpenStream(streamParm, d.playCb)
+			if err != nil {
+				fmt.Printf("unable to open playback audio stream on device %s\n", ad.DeviceName)
+				fmt.Println(err)
+				return
+			}
+			// d.PCMSamplerateConverter.Reset()
+			if err = stream.Start(); err != nil {
+				fmt.Printf("unable to start playback audio stream on device %s\n", ad.DeviceName)
+				fmt.Println(err)
+				return
+			}
+			// lets forward again audio streams received via Network
+			ad.Events.Pub(true, events.ForwardAudio)
 
 		// deserialize and write received audio data into the ring buffer
 		case msg := <-ad.ToDeserialize:
@@ -195,10 +220,18 @@ func (d *deserializer) playCb(in []float32, iTime portaudio.StreamCallbackTimeIn
 
 	if data != nil {
 		audioData := data.([]float32)
-		copy(in, audioData) //copy data into buffer
-	} else {
-		for i := 0; i < len(in); i++ {
-			in[i] = 0
+		if len(audioData) == len(in) {
+			copy(in, audioData) //copy data into buffer
+		} else {
+			// apparently the framerate has changed. Advice to resize
+			// the buffer and restart the Audio stream
+			d.Events.Pub(len(audioData), events.NewAudioFrameSize)
 		}
+		return
+	}
+
+	// fill with silence
+	for i := 0; i < len(in); i++ {
+		in[i] = 0
 	}
 }

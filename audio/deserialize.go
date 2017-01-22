@@ -3,7 +3,6 @@ package audio
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
@@ -23,6 +22,17 @@ type deserializer struct {
 	muRing      sync.Mutex
 	ring        ringBuffer.Ring
 }
+
+// // deserialize and write received audio data into the ring buffer
+// func (d *deserializer) Deserializer() {
+// 	select {
+// 	case msg := <-d.ToDeserialize:
+// 		err := d.DeserializeAudioMsg(msg)
+// 		if err != nil {
+// 			fmt.Println(err)
+// 		}
+// 	}
+// }
 
 // DeserializeAudioMsg will deserialize a Protocol Buffers message containing
 // Audio data and its corresponding meta data
@@ -83,13 +93,13 @@ func (d *deserializer) DecodeOpusAudioMsg(msg *sbAudio.AudioData) error {
 		return err
 	}
 
-	lenFrame := lenSample * d.AudioStream.Channels
-	lenBuffer := len(d.out)
-
-	if lenBuffer != lenFrame {
-		log.Println("sample != buffer")
+	if msg.Channels == nil {
+		return errors.New("Warning: Channel information missing for audio frame")
 	}
 
+	lenFrame := lenSample * int(msg.GetChannels())
+
+	//make a new array and copy the data into the array
 	buf := make([]float32, lenFrame)
 	for i := 0; i < lenFrame; i++ {
 		buf[i] = d.opusBuffer[i]
@@ -169,11 +179,16 @@ func (ad *deserializer) DecodePCMAudioMsg(msg *sbAudio.AudioData) error {
 		if err != nil {
 			return err
 		}
+
+		ad.muRing.Lock()
 		ad.ring.Enqueue(resampledAudio)
+		ad.muRing.Unlock()
 		// ad.out = resampledAudio
 	} else {
 		// ad.out = convertedAudio
+		ad.muRing.Lock()
 		ad.ring.Enqueue(convertedAudio)
+		ad.muRing.Unlock()
 	}
 
 	return nil

@@ -125,6 +125,7 @@ func RecorderAsync(ad AudioDevice) {
 
 	s.opusEncoder = opusEncoder
 	s.opusBuffer = make([]byte, 520000) //max opus message size
+	s.opusChannels = int32(ad.Channels)
 
 	// open the audio stream
 	stream, err = portaudio.OpenStream(streamParm, s.recordCb)
