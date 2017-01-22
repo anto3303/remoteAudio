@@ -220,26 +220,71 @@ func (ad *deserializer) DecodePCMAudioMsg(msg *sbAudio.AudioData) error {
 		}
 	}
 
-	var resampledAudio []float32
+	var audio []float32
 	var err error
 
 	// if necessary, resample the audio
 	if samplingrate != ad.Samplingrate {
 		ratio := ad.Samplingrate / samplingrate // output samplerate / input samplerate
-		resampledAudio, err = ad.PCMSamplerateConverter.Process(convertedAudio, ratio, false)
+		audio, err = ad.PCMSamplerateConverter.Process(convertedAudio, ratio, false)
 		if err != nil {
 			return err
 		}
+	}
 
-		ad.muRing.Lock()
-		ad.ring.Enqueue(resampledAudio)
-		ad.muRing.Unlock()
-		// ad.out = resampledAudio
+	lenFrame := len(audio)
+	lenBuffer := len(ad.out)
+	lenCache := len(ad.pcmFrameCache)
+
+	data := make([]float32, lenFrame+lenCache)
+
+	// combine cached frames with new data
+	if lenCache > 0 {
+		copy(data, ad.pcmFrameCache)
+		for i := 0; i < lenFrame; i++ {
+			data[lenCache+i] = audio[i]
+		}
 	} else {
-		// ad.out = convertedAudio
+		copy(data, audio)
+	}
+
+	lenData := len(data)
+	// fmt.Println("lenFrame", lenFrame)
+	// fmt.Println("lenCache", lenCache)
+	// fmt.Println("lenData", lenData)
+	// fmt.Println("lenBuffer", lenBuffer)
+
+	// received frame + cache is larger than our buffer
+	if lenData >= lenBuffer {
+		n, fraction := math.Modf(float64(lenData) / float64(lenBuffer))
+		// fmt.Println("n", n, "faction", fraction)
+		// fill the buffer
 		ad.muRing.Lock()
-		ad.ring.Enqueue(convertedAudio)
+		for i := 0; i < int(n); i++ {
+			//make new buffer
+			buf := make([]float32, lenBuffer)
+			for j := 0; j < lenBuffer; j++ {
+				buf[j] = data[i*lenBuffer+j]
+			}
+			// queue the buffer for play
+			ad.ring.Enqueue(buf)
+		}
 		ad.muRing.Unlock()
+		// clear cache slice
+		ad.pcmFrameCache = ad.pcmFrameCache[len(ad.pcmFrameCache):]
+		// copy remainder into cache
+		if fraction != 0 {
+			// fmt.Println("copy to cache:", lenData-lenBuffer*int(n), "bytes")
+			for i := 0; i < lenData-lenBuffer*int(n); i++ {
+				ad.pcmFrameCache = append(ad.pcmFrameCache, data[int(n)*lenBuffer+i])
+			}
+
+		}
+		// cache + received frame is smaller than audio buffer; let's cache it.
+	} else {
+		for i := 0; i < lenData; i++ {
+			ad.pcmFrameCache = append(ad.pcmFrameCache, data[i])
+		}
 	}
 
 	return nil

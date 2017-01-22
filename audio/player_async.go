@@ -96,6 +96,7 @@ func PlayerASync(ad AudioDevice) {
 	d.opusDecoder = opusDecoder
 	d.opusBuffer = make([]float32, 520000)               // max opus message size
 	d.opusFrameCache = make([]float32, 0, 2*len(ad.out)) // cache
+	d.pcmFrameCache = make([]float32, 0, 2*len(ad.out))
 
 	// open the audio stream
 	stream, err = portaudio.OpenStream(streamParm, d.playCb)
