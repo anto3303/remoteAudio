@@ -16,6 +16,8 @@ const (
 	NewAudioFrameSize = "newaudioframesize" // int
 	ForwardAudio      = "forwardAudio"      //bool
 	Shutdown          = "shutdown"          // bool
+	SetVolume         = "setVolume"         // int
+	OsExit            = "osExit"            // bool
 )
 
 // for message handling
