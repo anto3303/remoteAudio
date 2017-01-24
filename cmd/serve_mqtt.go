@@ -209,12 +209,15 @@ func mqttAudioServer() {
 	for {
 		select {
 
+		// CTRL-C has been pressed; let's prepare the shutdown
 		case <-osExitCh:
+			// advice that we are going offline
 			status.online = false
 			status.recordAudioOn = false
 			if err := status.sendUpdate(toWireCh); err != nil {
 				fmt.Println(err)
 			}
+			time.Sleep(time.Millisecond * 200)
 			evPS.Pub(true, events.Shutdown)
 
 		// shutdown the application gracefully
@@ -226,11 +229,11 @@ func mqttAudioServer() {
 			connStatus := ev.(int)
 			if connStatus == comms.CONNECTED {
 				status.online = true
+				if err := status.sendUpdate(toWireCh); err != nil {
+					fmt.Println(err)
+				}
 			} else {
 				status.online = false
-			}
-			if err := status.sendUpdate(toWireCh); err != nil {
-				fmt.Println(err)
 			}
 
 		case ev := <-recordAudioOnCh:
