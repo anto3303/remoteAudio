@@ -2,39 +2,57 @@ $.material.init();
 
 
 
-new Vue({
+var vm = new Vue({
     el: '#app',
 
     data: {
         ws: null, // Our websocket
         tx: false,
         txUser: null,
-        ping: null,
         serverOnline: false,
         serverAudioOn: false,
         connectionStatus: false,
         connected: false,
         hideConnectionMsg: false,
+        blockVolumeUpdate: false,
     },
     created: function () {
         var self = this;
         this.ws = new ReconnectingWebSocket('ws://' + window.location.host + '/ws');
         this.ws.addEventListener('message', function (e) {
             var msg = JSON.parse(e.data);
-            self.connectionStatus = msg.connectionStatus;
-            self.txUser = msg.txUser;
-            if (latencyChart.data.datasets[0].data.length >= 20) {
-                latencyChart.data.datasets[0].data.shift();
+            if (msg.connectionStatus !== null) {
+                self.connectionStatus = msg.connectionStatus;
             }
-            if (msg.ping > 500){
-                latencyChart.data.datasets[0].data.push(500); // truncate
-            } else {
-                latencyChart.data.datasets[0].data.push(msg.ping);
+            if (msg.txUser !== null) {
+                self.txUser = msg.txUser;
             }
-            latencyChart.update(0.1);
-            self.tx = msg.tx;
-            self.serverAudioOn = msg.serverAudioOn;
-            self.serverOnline = msg.serverOnline;
+            if (msg.latency !== null) {
+                if (latencyChart.data.datasets[0].data.length >= 20) {
+                    latencyChart.data.datasets[0].data.shift();
+                }
+                if (msg.ping > 500) {
+                    latencyChart.data.datasets[0].data.push(500); // truncate
+                } else {
+                    latencyChart.data.datasets[0].data.push(msg.latency);
+                }
+                latencyChart.update(0.1);
+            }
+            if (msg.tx !== null) {
+                self.tx = msg.tx;
+            }
+            if (msg.serverAudioOn !== null) {
+                self.serverAudioOn = msg.serverAudioOn;
+            }
+            if (msg.serverOnline !== null) {
+                self.serverOnline = msg.serverOnline;
+            }
+            if (msg.volume !== null){
+                // only allow updates if we are not modifying the handle
+                if (!self.blockVolumeUpdate){
+                    volumeSlider.noUiSlider.set(msg.volume);
+                }
+            }
         });
         this.ws.addEventListener('open', function () {
             self.connected = true
@@ -66,18 +84,30 @@ new Vue({
                 }));
             // }
         },
-    }
+        sendVolume: function (value) {
+            this.ws.send(
+                JSON.stringify({
+                    volume: value,
+                })
+            )
+        }
+    },
+    // watch: {
+    //     volume : function(val, oldVal){
+    //         volumeSlider.set(val);
+    //     }
+    // }
 });
 
 var volumeSlider = document.getElementById('volumeSlider');
 
 noUiSlider.create(volumeSlider, {
-    start: [50],
+    start: [1],
     connect: [true, false],
     // tooltips: [ true ],
     range: {
         'min': 0,
-        'max': 100
+        'max': 2
     },
     pips: { // Show a scale with the slider
         mode: 'steps',
@@ -85,6 +115,31 @@ noUiSlider.create(volumeSlider, {
         density: 5
     }
 });
+
+// block the Volume slider to be updated through websocket while we
+// modify the slider
+$(document).ready(function () {
+    volumeSlider.noUiSlider.on('start', function (values, handle) {
+        vm.blockVolumeUpdate = true;
+    });
+});
+
+// send updates to server 
+$(document).ready(function () {
+    volumeSlider.noUiSlider.on('update', function (values, handle) {
+        vm.sendVolume(Number(values[handle]));
+    });
+});
+
+//unblock the Volume slider updates through websocket
+$(document).ready(function () {
+    volumeSlider.noUiSlider.on('end', function (values, handle) {
+        vm.blockVolumeUpdate = false;
+    });
+});
+
+
+
 
 var data = {
     labels: ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],

@@ -42,7 +42,8 @@
                     </div>
                     <div class="row-content">
                       <h4 class="list-group-item-heading">MQTT Broker</h4>
-                      <h4><span class="label" v-bind:class="{'label-success': connectionStatus}">Connected</h4>
+                      <h4 v-if="connectionStatus"><span class="label label-success">Connected</h4>
+                      <h4 v-else><span class="label label-danger">Disconnected</h4>
                     </div>
                   </div>
                   <div class="list-group-separator"></div>
@@ -51,8 +52,9 @@
                       <i class="fa fa-wifi" aria-hidden="true"></i>
                     </div>
                     <div class="row-content">
-                      <h4 class="list-group-item-heading">Server Online</h4>
-                      <h4><span class="label" v-bind:class="{'label-success': serverOnline}">Connected</h4>
+                      <h4 class="list-group-item-heading">Server Status</h4>
+                      <h4 v-if="serverOnline"><span class="label label-success">Online</h4>
+                      <h4 v-else><span class="label label-danger">Offline</h4>
                     </div>
                   </div>                  
                 </div>
@@ -91,15 +93,15 @@
         </div>
         <div>
           <div class="row">
-            <div class="col-lg-9 col-md-9">
+            <div class="col-lg-12 col-md-12">
               <div class="panel panel-primary">
-                <div class="panel-heading"><i class="fa fa-area-chart" aria-hidden="true"></i> Latency</div>
+                <div class="panel-heading"><i class="fa fa-area-chart" aria-hidden="true"></i> Latency (one way)</div>
                 <div class="card-block">
                   <canvas id="latencyChart"></canvas>
                 </div>
               </div>
             </div>
-            <div class="col-lg-3 col-md-3">
+            <!--<div class="col-lg-3 col-md-3">
               <div class="panel panel-primary">
                 <div class="panel-heading">
                   Users Online
@@ -126,10 +128,10 @@
                   </div>
                 </div>
               </div>
-            </div>
+            </div>-->
           </div>
         </div>
-        <p> Tx User: {{txUser}} </p>
+        <!--<p> Tx User: {{txUser}} </p>-->
       </div>
     </div>
     <div id="connection">
