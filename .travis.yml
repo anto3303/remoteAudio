@@ -1,25 +1,40 @@
 language: go
-
 dist: trusty
 sudo: false
 env:
-    - GOARCH=amd64
-    
+    - GIMME_OS=linux GIMME_ARCH=amd64
+    # - GIMME_OS=linux GIMME_ARCH=386
+    # - GIMME_OS=linux GIMME_ARCH=arm
+    # - GIMME_OS=darwin GIMME_ARCH=amd64
 go:
-    - 1.6
-    - 1.7
-    - tip
-
+- 1.7
 addons:
-    apt: 
-      packages: 
-         - pkg-config
-         - libsamplerate0
-         - libsamplerate0-dev
-         - libopusfile-dev
-         - libopus-dev
-         - libportaudio2
-         - portaudio19-dev
+  apt:
+    packages:
+    - pkg-config
+    - libsamplerate0
+    - libsamplerate0-dev
+    - libopusfile-dev
+    - libopus-dev
+    - libportaudio2
+    - portaudio19-dev
+    - autoconf automake libtool curl make g++ unzip
+   
+install:
+  - ./install-protobuf.sh
+  - export PATH=$PATH:~/protobuf/bin
+  - go get github.com/gogo/protobuf/protoc-gen-gofast
+  - go get ./...
+  # 
 
 script:
-    go build
+  - make build
+
+# deploy:
+#   provider: releases
+#   api_key:claudiro
+
+#     secure: MlGjGPNQTUdqV6mBNavEMTCo2UMWpiek/mUFmR8T98dm55tdtrj9xfkBv9mLVPlqjsxtyNWVO0arGnixngwNB6+eoLJ3YvsA7XJxKAZ79InqmI2mzypBYgnfBZ7Tv1iGpfC/5GH7sSqm2V2XCE9UJM4XQ5s3n6eaknqNHwVHQ6nwCsbrWQq1ZfUbrPD7bAhKS7ZRsW3JwrjazCFvBzuTXopUy/Cx/9T/7dBn4FW7byT2otxE9zMSArEYehrcJgdQDBzNOeG1MWzta5ztK/XfykUb0AIMPFTQC8wvIzVaaZaNVktGtUqmO2fmOedNfKMswQH0E/2Sjkci5Lq92rY0wJtih2ANfVp+mqeknTfgiGsyEyjt9iXslt7asNMSXBAC5yfGKfdEPC3z6ABdeJcwMsB8FR8i/j50Hdk8zjo84koRcgdtGA0CTDMw4E+A909C0tswflqC2PZWw2dFkMkCYElUKMc2rU3GUxAy3Xtc0PiJ9HR48trHbI7vq67aoWKCQBESqDQTZep0KrW93bx9GRpwOjH7GO3OLrqpwijXObUK28QrGJGWWW3dLyiDCov7NEqw9W6qdA52+7scX0y43W3agwNnZN2eO+mjeBDBGT5/qj4M3RGoOgj7l88jj969oJPKIBT5aWLdXnaidV2xX2U52vKiaslFES4OjuPEmQ4=
+#   file: test.tar.gz
+#   on:
+#     repo: dh1tw/remoteAudio
