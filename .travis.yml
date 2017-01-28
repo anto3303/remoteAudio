@@ -28,10 +28,9 @@ install:
   - chmod +x ./install-protobuf.sh
   - ./install-protobuf.sh
   - export PATH=$PATH:$HOME/protobuf/bin
-  - protoc --proto_path=./icd --gofast_out=./sb_audio ./icd/audio.proto
   - go get github.com/gogo/protobuf/protoc-gen-gofast
+  - protoc --proto_path=./icd --gofast_out=./sb_audio ./icd/audio.proto
   - go get -d ./...
-
 
 script:
   - make build
