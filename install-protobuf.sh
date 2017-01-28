@@ -6,6 +6,7 @@ if [ ! -d "$HOME/protobuf/lib" ]; then
   tar -xzvf v3.1.0.tar.gz
   cd protobuf-3.1.0 && ./autogen.sh && ./configure --prefix=$HOME/protobuf && make && make install
   cd ..
+  chmod +x $HOME/protobuf/bin/protoc
 else
   echo "Using cached directory."
 fi
