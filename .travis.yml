@@ -25,6 +25,7 @@ install:
   - ./install-protobuf.sh
   - export PATH=$PATH:~/protobuf/bin
   - go get github.com/gogo/protobuf/protoc-gen-gofast
+  - protoc --proto_path=./icd --gofast_out=./sb_audio ./icd/audio.proto
   - go get ./...
   # 
 
