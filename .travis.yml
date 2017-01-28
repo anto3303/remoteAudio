@@ -33,7 +33,7 @@ install:
   - go get github.com/GeertJohan/go.rice/rice
   - go get -d ./...
   - export VERSION 
-  - tar -cvzf remoteAudio-$TRAVIS_TAG-$GIMME_OS-$GIMME_ARCH.tar.gz remoteAudio
+  - tar -cvzf remoteAudio-${TRAVIS_TAG}-${GIMME_OS}-${GIMME_ARCH}.tar.gz remoteAudio
 
 script:
   - make dist
