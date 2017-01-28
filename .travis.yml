@@ -21,6 +21,7 @@ addons:
     - autoconf automake libtool curl make g++ unzip
    
 install:
+  - chmod +x ./install-protobuf.sh
   - ./install-protobuf.sh
   - export PATH=$PATH:~/protobuf/bin
   - go get github.com/gogo/protobuf/protoc-gen-gofast
