@@ -27,7 +27,7 @@ addons:
 install:
   - chmod +x ./install-protobuf.sh
   - ./install-protobuf.sh
-  - PATH=$PATH:$HOME/protobuf/bin
+  - export PATH=$PATH:$HOME/protobuf/bin
   - protoc --proto_path=./icd --gofast_out=./sb_audio ./icd/audio.proto
   - go get github.com/gogo/protobuf/protoc-gen-gofast
   - go get -d ./...
@@ -39,7 +39,6 @@ script:
 # deploy:
 #   provider: releases
 #   api_key:claudiro
-
 #     secure: MlGjGPNQTUdqV6mBNavEMTCo2UMWpiek/mUFmR8T98dm55tdtrj9xfkBv9mLVPlqjsxtyNWVO0arGnixngwNB6+eoLJ3YvsA7XJxKAZ79InqmI2mzypBYgnfBZ7Tv1iGpfC/5GH7sSqm2V2XCE9UJM4XQ5s3n6eaknqNHwVHQ6nwCsbrWQq1ZfUbrPD7bAhKS7ZRsW3JwrjazCFvBzuTXopUy/Cx/9T/7dBn4FW7byT2otxE9zMSArEYehrcJgdQDBzNOeG1MWzta5ztK/XfykUb0AIMPFTQC8wvIzVaaZaNVktGtUqmO2fmOedNfKMswQH0E/2Sjkci5Lq92rY0wJtih2ANfVp+mqeknTfgiGsyEyjt9iXslt7asNMSXBAC5yfGKfdEPC3z6ABdeJcwMsB8FR8i/j50Hdk8zjo84koRcgdtGA0CTDMw4E+A909C0tswflqC2PZWw2dFkMkCYElUKMc2rU3GUxAy3Xtc0PiJ9HR48trHbI7vq67aoWKCQBESqDQTZep0KrW93bx9GRpwOjH7GO3OLrqpwijXObUK28QrGJGWWW3dLyiDCov7NEqw9W6qdA52+7scX0y43W3agwNnZN2eO+mjeBDBGT5/qj4M3RGoOgj7l88jj969oJPKIBT5aWLdXnaidV2xX2U52vKiaslFES4OjuPEmQ4=
 #   file: test.tar.gz
 #   on:
