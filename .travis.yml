@@ -2,16 +2,12 @@ language: go
 dist: trusty
 sudo: false
 env:
-    - GIMME_OS=linux GIMME_ARCH=amd64
-    # - GIMME_OS=linux GIMME_ARCH=386
-    # - GIMME_OS=linux GIMME_ARCH=arm
-    # - GIMME_OS=darwin GIMME_ARCH=amd64
+- GIMME_OS=linux GIMME_ARCH=amd64
 go:
 - 1.7
 cache:
   directories:
   - $HOME/protobuf
-
 addons:
   apt:
     packages:
@@ -23,25 +19,24 @@ addons:
     - libportaudio2
     - portaudio19-dev
     - autoconf automake libtool curl make g++ unzip
-   
 install:
-  - chmod +x ./install-protobuf.sh
-  - ./install-protobuf.sh
-  - export PATH=$PATH:$HOME/protobuf/bin
-  - go get github.com/gogo/protobuf/protoc-gen-gofast
-  - protoc --proto_path=./icd --gofast_out=./sb_audio ./icd/audio.proto
-  - go get github.com/GeertJohan/go.rice/rice
-  - go get -d ./...
-
+- chmod +x ./install-protobuf.sh
+- ./install-protobuf.sh
+- export PATH=$PATH:$HOME/protobuf/bin
+- go get github.com/gogo/protobuf/protoc-gen-gofast
+- protoc --proto_path=./icd --gofast_out=./sb_audio ./icd/audio.proto
+- go get github.com/GeertJohan/go.rice/rice
+- go get -d ./...
 script:
-  - make dist
-
+- make dist
 before_deploy:
-  - tar -cvzf remoteAudio-$TRAVIS_TAG-$GIMME_OS-$GIMME_ARCH.tar.gz remoteAudio
+- tar -cvzf remoteAudio-$TRAVIS_TAG-$GIMME_OS-$GIMME_ARCH.tar.gz remoteAudio
 
 deploy:
   provider: releases
-    secure: MlGjGPNQTUdqV6mBNavEMTCo2UMWpiek/mUFmR8T98dm55tdtrj9xfkBv9mLVPlqjsxtyNWVO0arGnixngwNB6+eoLJ3YvsA7XJxKAZ79InqmI2mzypBYgnfBZ7Tv1iGpfC/5GH7sSqm2V2XCE9UJM4XQ5s3n6eaknqNHwVHQ6nwCsbrWQq1ZfUbrPD7bAhKS7ZRsW3JwrjazCFvBzuTXopUy/Cx/9T/7dBn4FW7byT2otxE9zMSArEYehrcJgdQDBzNOeG1MWzta5ztK/XfykUb0AIMPFTQC8wvIzVaaZaNVktGtUqmO2fmOedNfKMswQH0E/2Sjkci5Lq92rY0wJtih2ANfVp+mqeknTfgiGsyEyjt9iXslt7asNMSXBAC5yfGKfdEPC3z6ABdeJcwMsB8FR8i/j50Hdk8zjo84koRcgdtGA0CTDMw4E+A909C0tswflqC2PZWw2dFkMkCYElUKMc2rU3GUxAy3Xtc0PiJ9HR48trHbI7vq67aoWKCQBESqDQTZep0KrW93bx9GRpwOjH7GO3OLrqpwijXObUK28QrGJGWWW3dLyiDCov7NEqw9W6qdA52+7scX0y43W3agwNnZN2eO+mjeBDBGT5/qj4M3RGoOgj7l88jj969oJPKIBT5aWLdXnaidV2xX2U52vKiaslFES4OjuPEmQ4=
+  api_key:
+    secure: OhP5sEYJqU5sRHCIPNz0pGGmRpE9BoRpygTq9qAMJpzjBX/0oak62SvSh+y4Imv81r6K1Jc7qMz3ZmGlJOvY2xeipHPfWZtjI/4RszQSmwDhNzEHGZQ5WiMaHT2p80F9PJgLdSFsvAawot6+VopqlpsvEOpgfocyX9hCgfDveRDB8mpN+NrT4+egEGKu06wT2ADDQSVaGIc1LloLp4uEeNJo9wFLGWDnThPDaQ1oYZXiir9NZjxSjDKXyFDIhAki1WdbM1F9ea/lHZlJHJpUMKY8AA7INNgeyOsHjf3r1DCsdp3X7UKNbkv5KSpSwtURM5frdiPg+S/i/sb/ya9XICXFJAx3zbBKvCecZ4if8bUy82QBZSjlT5L8QJsTi8oHjQKC6m/dQh2lDxBZFbpWOtoTYCBlkexW8NyIuKmx5vsR1arsJn2lJZmii5G5+FwvyDftpbTpc/4NlcVcjIs/rzCGG8TQDhN8rxX+utJ1vs2G5al6CJWVXupqiNz8+S35ciqYhTyuIXeYG5MffEfBM45tzA6F2WQCsutoYatuo2SV5cLQzbCSeWO6LNsfGSWlyw6jC/Ixg6erFpCXbC/3gkbGH7oYAMEVaoSlhMm4TgdLcn+jnaF7z2wdY0YhHioekWATtbLOy1Cwcy5SYGPKuoY9rk+wlsjAPmV6PoIfYQ8=
   file: remoteAudio-$TRAVIS_TAG-$GIMME_OS-$GIMME_ARCH.tar.gz
   on:
     repo: dh1tw/remoteAudio
+    branch: travis
