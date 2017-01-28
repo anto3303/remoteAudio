@@ -3,6 +3,7 @@ dist: trusty
 sudo: false
 env:
 - GIMME_OS=linux GIMME_ARCH=amd64
+- GIMME_OS=linux GIMME_ARCH=arm
 go:
 - 1.7
 cache:
