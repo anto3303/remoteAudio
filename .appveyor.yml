@@ -4,6 +4,7 @@ environment:
   global:
     APPVEYOR_OS_NAME: windows
     GOPATH: c:\gopath
+    GOARCH: 386
   matrix:
     #- MSYS2_ARCH: x86_64
     #  MSYS2_BITS: 64
