@@ -12,6 +12,7 @@ if "%METHOD%"=="cross" 7z x msys2-base-%MSYS2_ARCH%-%MSYS2_BASEVER%.tar > nul
 %MSYS_PATH%\usr\bin\bash -lc "echo update-core starting..." 2> nul
 %MSYS_PATH%\usr\bin\bash -lc "update-core" > nul
 %MSYS_PATH%\usr\bin\bash -lc "echo install-deps starting..."
+%MSYS_PATH%\usr\bin\bash -lc "pacman --noconfirm --needed -Sy make" > nul
 %MSYS_PATH%\usr\bin\bash -lc "pacman --noconfirm --needed -Sy mingw-w64-%MSYS2_ARCH%-gcc" > nul
 %MSYS_PATH%\usr\bin\bash -lc "pacman --noconfirm --needed -Sy mingw-w64-%MSYS2_ARCH%-pkg-config" > nul
 %MSYS_PATH%\usr\bin\bash -lc "pacman --noconfirm --needed -Sy mingw-w64-%MSYS2_ARCH%-libsamplerate" > nul
