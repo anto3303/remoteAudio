@@ -3,7 +3,7 @@ platform:
 environment:
   global:
     APPVEYOR_OS_NAME: windows
-    GOPATH: c:\go-x86
+    GOPATH: c:\gopath
   matrix:
     #- MSYS2_ARCH: x86_64
     #  MSYS2_BITS: 64
