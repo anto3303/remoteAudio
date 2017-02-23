@@ -1,0 +1,33 @@
+platform:
+  - x86
+environment:
+  global:
+    APPVEYOR_OS_NAME: windows
+    GOPATH: c:\go-x86
+  matrix:
+    #- MSYS2_ARCH: x86_64
+    #  MSYS2_BITS: 64
+    #  MSYSTEM: MSYS2
+    #  METHOD: ci
+    #- MSYS2_ARCH: i686
+    #  MSYS2_BITS: 32
+    #  MSYSTEM: MINGW32
+    #  METHOD: cross
+    - MSYS2_ARCH: i686
+      MSYS2_BITS: 32
+      MSYSTEM: MINGW32
+      METHOD: cross
+      MSYS2_BASEVER: 20150916
+install:
+  - .\ci\install-deps-windows.bat
+build_script:
+  - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && make build"'
+after_build:
+  - .\ci\build-windows-bundle.bat
+artifacts:
+  - path: remoteAudio.zip
+    name: remoteAudio
+# deploy_script:
+#   - SET APPVEYOR_BUILD_VERSION=%APPVEYOR_REPO_BRANCH%
+#   - if "%APPVEYOR_REPO_TAG%" == "true" set APPVEYOR_BUILD_VERSION=%APPVEYOR_REPO_TAG_NAME%
+#   - curl -T coyim.zip -u "%BINTRAY_USER%:%BINTRAY_APIKEY%" "https://api.bintray.com/content/twstrike/coyim/coyim-bin/%APPVEYOR_BUILD_VERSION%/%APPVEYOR_BUILD_VERSION%/windows/CoyIM.zip?override=1&publish=1"
