@@ -26,7 +26,7 @@ clone_script:
 install:
   - .\ci\install-deps-windows.bat
 build_script:
-  - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && make build"'
+  - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && ls -al && pwd && make build"'
 after_build:
   - .\ci\build-windows-bundle.bat
 artifacts:
