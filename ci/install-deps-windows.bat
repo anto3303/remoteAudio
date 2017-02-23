@@ -19,5 +19,7 @@ if "%METHOD%"=="cross" 7z x msys2-base-%MSYS2_ARCH%-%MSYS2_BASEVER%.tar > nul
 %MSYS_PATH%\usr\bin\bash -lc "pacman --noconfirm --needed -Sy mingw-w64-%MSYS2_ARCH%-portaudio" > nul
 %MSYS_PATH%\usr\bin\bash -lc "pacman --noconfirm --needed -Sy mingw-w64-%MSYS2_ARCH%-opusfile" > nul
 %MSYS_PATH%\usr\bin\bash -lc "pacman --noconfirm --needed -Sy mingw-w64-%MSYS2_ARCH%-opus" > nul
+%MSYS_PATH%\usr\bin\bash -lc "pacman --noconfirm --needed -Sy mingw-w64-%MSYS2_ARCH%-protobuf" > nul
+%MSYS_PATH%\usr\bin\bash -lc "pacman --noconfirm --needed -Sy curl" > nul
 %MSYS_PATH%\usr\bin\bash -lc "yes|pacman --noconfirm -Sc" > nul
 if "%METHOD%"=="cross" %MSYS_PATH%\autorebase.bat > nul
