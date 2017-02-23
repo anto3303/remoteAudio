@@ -25,6 +25,7 @@ clone_script:
     # - cmd: git submodule update --init --recursive
 install:
   - .\ci\install-deps-windows.bat
+  - go get ./...
 build_script:
   - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && ls -al && pwd && go build"'
 after_build:
