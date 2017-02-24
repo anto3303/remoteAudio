@@ -42,7 +42,7 @@ install:
 #   - go get -u gopkg.in/hraban/opus.v2
 #   - cd c:\gopath\src\github.com\dh1tw\remoteAudio
 #   - go get ./...
-  - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && go get -v ./..."'
+  - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && go get -d -v ./..."'
 build_script:
   - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && ls -al && pwd && go build"'
 after_build:
