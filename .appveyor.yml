@@ -40,8 +40,8 @@ install:
 #   - go get -u github.com/spf13/viper
 #   - go get -u github.com/zfjagann/golang-ring
 #   - go get -u gopkg.in/hraban/opus.v2
-  - cd c:\gopath\src\github.com\dh1tw\remoteAudio
-  - go get ./...
+#   - cd c:\gopath\src\github.com\dh1tw\remoteAudio
+#   - go get ./...
 build_script:
   - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && ls -al && pwd && go build"'
 after_build:
