@@ -29,24 +29,9 @@ clone_script:
     # - cmd: git submodule update --init --recursive
 install:
   - .\ci\install-deps-windows.bat
-#   - go get -u github.com/cskr/pubsub
-#   - go get -u github.com/GeertJohan/go.rice
-#   - go get -u github.com/GeertJohan/go.rice/embedded
-#   - go get -u github.com/gordonklaus/portaudio
-#   - go get -u github.com/dh1tw/gosamplerate
-#   - go get -u github.com/eclipse/paho.mqtt.golang
-#   - go get -u github.com/gogo/protobuf/proto
-#   - go get -u github.com/golang/protobuf/proto
-#   - go get -u github.com/gorilla/websocket
-#   - go get -u github.com/spf13/cobra
-#   - go get -u github.com/spf13/viper
-#   - go get -u github.com/zfjagann/golang-ring
-#   - go get -u gopkg.in/hraban/opus.v2
-#   - cd c:\gopath\src\github.com\dh1tw\remoteAudio
-#   - go get ./...
   - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && go get -v ./..."'
 build_script:
-  - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && ls -al && pwd && go build"'
+  - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && make"'
 after_build:
   - .\ci\build-windows-bundle.bat
 artifacts:
