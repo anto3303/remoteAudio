@@ -31,6 +31,7 @@ install:
   - .\ci\install-deps-windows.bat
   - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && go get -v ./..."'
 build_script:
+  - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio/icd && ls -al"'
   - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && make"'
 after_build:
   - .\ci\build-windows-bundle.bat
