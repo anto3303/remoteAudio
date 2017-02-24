@@ -6,19 +6,19 @@ environment:
     GOPATH: c:\gopath
     GOARCH: 386
   matrix:
-    #- MSYS2_ARCH: x86_64
-    #  MSYS2_BITS: 64
-    #  MSYSTEM: MSYS2
-    #  METHOD: ci
+    - MSYS2_ARCH: x86_64
+     MSYS2_BITS: 64
+     MSYSTEM: MSYS2
+     METHOD: ci
     #- MSYS2_ARCH: i686
     #  MSYS2_BITS: 32
     #  MSYSTEM: MINGW32
     #  METHOD: cross
-    - MSYS2_ARCH: i686
-      MSYS2_BITS: 32
-      MSYSTEM: MINGW32
-      METHOD: cross
-      MSYS2_BASEVER: 20150916
+    # - MSYS2_ARCH: i686
+    #   MSYS2_BITS: 32
+    #   MSYSTEM: MINGW32
+    #   METHOD: cross
+    #   MSYS2_BASEVER: 20150916
 clone_folder: c:\gopath\src\github.com\dh1tw\remoteAudio
 clone_script:
     - cmd: git clone --recursive -q --branch=%APPVEYOR_REPO_BRANCH% https://github.com/%APPVEYOR_REPO_NAME%.git %APPVEYOR_BUILD_FOLDER%
