@@ -62,4 +62,4 @@ server: build
 clean:
 	-@rm ${OUT} ${OUT}-v*
 
-.PHONY: build client server install vet lint clean
+.PHONY: build client server install vet lint clean ci
