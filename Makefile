@@ -27,7 +27,8 @@ ci:
 	ls -al ./icd 
 	ls -al ./sb_audio
 	protoc --help
-	protoc --proto_path=./icd --gofast_out=./sb_audio ./icd/audio.proto
+	protoc --version
+	protoc --proto_path=./icd --go_out=./sb_audio ./icd/audio.proto
 	cd webserver; \
 	rice embed-go 
 	go build -v -o ${OUT} -ldflags="-w -X github.com/dh1tw/remoteAudio/cmd.commitHash=${COMMIT} \
