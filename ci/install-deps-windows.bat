@@ -6,7 +6,7 @@ if "%METHOD%"=="ci" SET MSYS_PATH=c:\msys64
 if "%METHOD%"=="cross" SET MSYS_PATH=%APPVEYOR_BUILD_FOLDER%\msys%MSYS2_BITS%
 SET PATH=%MSYS_PATH%\usr\bin;%PATH%
 SET PATH=%MSYS_PATH%\mingw%MSYS2_BITS%\bin;%PATH%
-if Not Exist %MSYS_PATH%\msys2-base-%MSYS2_ARCH%-%MSYS2_BASEVER%.tar.xz ( 
+if Not Exist %APPVEYOR_BUILD_FOLDER%\msys%MSYS2_BITS%\msys2-base-%MSYS2_ARCH%-%MSYS2_BASEVER%.tar.xz ( 
 if "%METHOD%"=="cross" appveyor DownloadFile http://kent.dl.sourceforge.net/project/msys2/Base/%MSYS2_ARCH%/msys2-base-%MSYS2_ARCH%-%MSYS2_BASEVER%.tar.xz
 )
 if "%METHOD%"=="cross" 7z x msys2-base-%MSYS2_ARCH%-%MSYS2_BASEVER%.tar.xz > nul
