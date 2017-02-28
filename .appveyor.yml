@@ -38,7 +38,7 @@ install:
   
 build_script:
   - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio/icd && ls -al"'
-  - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && make ci"'
+  - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && make build"'
 after_build:
   - .\ci\build-windows-bundle.bat
 artifacts:
