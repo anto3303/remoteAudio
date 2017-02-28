@@ -33,7 +33,7 @@ install:
   - cmd: echo %PATH%
   - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && go get -v ./..."'
   - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && go get -v github.com/gogo/protobuf/protoc-gen-gofast"'
-  - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/bin && ls"'
+  - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/bin/windows_386 && ls"'
   - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/bin && printenv"'
   
 build_script:
