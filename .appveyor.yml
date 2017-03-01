@@ -4,9 +4,8 @@ environment:
   global:
     APPVEYOR_OS_NAME: windows
     GOPATH: c:\gopath
-    GOARCH: 386
-    GOOS: windows
     CGO_ENABLED: 1
+    GOOS: windows
   matrix:
     #- MSYS2_ARCH: x86_64
     #  MSYS2_BITS: 64
@@ -16,11 +15,14 @@ environment:
     #  MSYS2_BITS: 32
     #  MSYSTEM: MINGW32
     #  METHOD: cross
+      GOARCH: amd64
     - MSYS2_ARCH: i686
       MSYS2_BITS: 32
       MSYSTEM: MINGW32
       METHOD: cross
       MSYS2_BASEVER: 20150916
+      GOARCH: 386
+
 cache: 
   - 'msys2-base-%MSYS2_ARCH%-%MSYS2_BASEVER%.tar.xz'
 clone_folder: c:\gopath\src\github.com\dh1tw\remoteAudio
@@ -44,7 +46,7 @@ build_script:
 after_build:
   - .\ci\build-windows-bundle.bat
 artifacts:
-  - path: remoteAudio-v$APPVEYOR_REPO_TAG_NAME-$GOARCH-$GOOS.zip
+  - path: remoteAudio-v%APPVEYOR_REPO_TAG_NAME%-%GOARCH%-%GOOS%.zip
     name: remoteAudio
 deploy:
   release: remoteAudio$(appveyor_build_version)
