@@ -40,6 +40,8 @@ install:
   - '%MSYS_PATH%\usr\bin\bash -lc "go get -v github.com/GeertJohan/go.rice/rice"'
   
 build_script:
+  - '%MSYS_PATH%\usr\bin\bash -lc "echo $GOOS"'
+  - '%MSYS_PATH%\usr\bin\bash -lc "echo $GOARCH"'
   - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && make dist"'
 after_build:
   - .\ci\build-windows-bundle.bat

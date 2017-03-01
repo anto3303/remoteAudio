@@ -23,18 +23,6 @@ dist:
 	go build -v -o ${OUT} -ldflags="-w -X github.com/dh1tw/remoteAudio/cmd.commitHash=${COMMIT} \
 		-X github.com/dh1tw/remoteAudio/cmd.version=${VERSION}"
 
-ci:
-	ls -al ./icd 
-	ls -al ./sb_audio
-	protoc --help
-	protoc --version
-	protoc --proto_path=./icd --go_out=./sb_audio ./icd/audio.proto
-	cd webserver; \
-	rice embed-go 
-	go build -v -o ${OUT} -ldflags="-w -X github.com/dh1tw/remoteAudio/cmd.commitHash=${COMMIT} \
-		-X github.com/dh1tw/remoteAudio/cmd.version=${VERSION}"
-
-
 # test:
 # 	@go test -short ${PKG_LIST}
 
@@ -65,4 +53,4 @@ server: build
 clean:
 	-@rm ${OUT} ${OUT}-v*
 
-.PHONY: build client server install vet lint clean ci
+.PHONY: build client server install vet lint clean
