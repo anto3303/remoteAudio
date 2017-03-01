@@ -40,15 +40,12 @@ install:
   - '%MSYS_PATH%\usr\bin\bash -lc "go get -v github.com/GeertJohan/go.rice/rice"'
   
 build_script:
-  - '%MSYS_PATH%\usr\bin\bash -lc "echo $GOOS"'
-  - '%MSYS_PATH%\usr\bin\bash -lc "echo $GOARCH"'
   - '%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio && make dist"'
-  - '%MSYS_PATH%\usr\bin\bash -lc "file /c/gopath/src/github.com/dh1tw/remoteAudio/remoteAudio"'
 after_build:
   - .\ci\build-windows-bundle.bat
-# artifacts:
-#   - path: remoteAudio.zip
-#     name: remoteAudio
+artifacts:
+  - path: remoteAudio.zip
+    name: remoteAudio
 # deploy:
 #   release: remoteAudio$(appveyor_build_version)
 #   description: 'Release description'
