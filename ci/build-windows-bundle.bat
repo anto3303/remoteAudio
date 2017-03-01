@@ -11,7 +11,7 @@ REM %MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio 
 %MSYS_PATH%\usr\bin\bash -lc "cp /c/gopath/src/github.com/dh1tw/remoteAudio/remoteAudio.exe /c/gopath/src/github.com/dh1tw/remoteAudio/release"
 
 REM zip everything
-%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio/release && 7z a -tzip remoteAudio.zip *"
+%MSYS_PATH%\usr\bin\bash -lc "cd /c/gopath/src/github.com/dh1tw/remoteAudio/release && 7z a -tzip remoteAudio-v$tag-$GOARCH-$GOOS.zip *"
 
 REM copy it into the build folder
 xcopy %GOPATH%\src\github.com\dh1tw\remoteAudio\release\remoteAudio.zip %APPVEYOR_BUILD_FOLDER%\ /e /i > nul
