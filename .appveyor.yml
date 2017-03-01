@@ -15,7 +15,7 @@ environment:
     #  MSYS2_BITS: 32
     #  MSYSTEM: MINGW32
     #  METHOD: cross
-      GOARCH: amd64
+    # GOARCH: amd64
     - MSYS2_ARCH: i686
       MSYS2_BITS: 32
       MSYSTEM: MINGW32
