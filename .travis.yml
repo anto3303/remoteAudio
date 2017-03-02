@@ -26,8 +26,8 @@ addons:
     - portaudio19-dev
     - autoconf automake libtool curl make g++ unzip
 install:
-# - chmod +x ./ci-install-deps-linux-osx.sh
 - ./ci/install-deps-linux-osx.sh
+- export PATH=$PATH:$HOME/protobuf/bin
 script:
 - make dist
 before_deploy:
