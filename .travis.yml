@@ -42,3 +42,4 @@ deploy:
   on:
     repo: dh1tw/remoteAudio
     draft: true
+    go: 1.8
