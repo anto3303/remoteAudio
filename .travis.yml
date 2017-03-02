@@ -32,7 +32,6 @@ script:
 - make dist
 before_deploy:
 - tar -cvzf remoteAudio-v$TRAVIS_TAG-$GIMME_OS-$GIMME_ARCH.tar.gz remoteAudio
-
 deploy:
   provider: releases
   api_key:
