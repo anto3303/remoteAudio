@@ -9,11 +9,16 @@ fi
 if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
     brew update
     brew outdated pkg-config || brew upgrade pkg-config
-    brew outdated opus || brew upgrade opus
-    brew outdated opusfile || brew upgrade opusfile
-    brew outdated portaudio || brew upgrade portaudio
-    brew outdated protobuf || brew upgrade protobuf
-    brew outdated libsamplerate || brew upgrade libsamplerate
+    brew install opus
+    brew install opusfile
+    brew install portaudio
+    brew install protobuf
+    brew install libsamplerate
+    # brew outdated opus || brew upgrade opus
+    # brew outdated opusfile || brew upgrade opusfile
+    # brew outdated portaudio || brew upgrade portaudio
+    # brew outdated protobuf || brew upgrade protobuf
+    # brew outdated libsamplerate || brew upgrade libsamplerate
 else #Linux
     # Ubuntu 16.04 comes with an old version of protobuf. 
     # We have to download and install a newer one
