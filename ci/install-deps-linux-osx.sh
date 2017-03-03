@@ -6,7 +6,7 @@ if [[ $GIMME_ARCH != "arm" ]]; then
     env GOOS=$GIMME_OS GOARCH=$GIMME_ARCH go get -d ./...
 fi
 
-if [[ '$TRAVIS_OS_NAME' == 'osx' ]]; then
+if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
     brew update
     brew outdated pkg-config || brew upgrade pkg-config
     brew outdated opus || brew upgrade opus
