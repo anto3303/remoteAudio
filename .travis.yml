@@ -4,16 +4,21 @@ sudo: true
 matrix:
   include: 
     - os: linux
-      env: GIMME_OS=linux GIMME_ARCH=amd64
+      env: 
+        - GIMME_OS=linux 
+        - GIMME_ARCH=amd64
       go:
-        - 1.7
         - 1.8
     - os: linux
-      env: GIMME_OS=linux GIMME_ARCH=arm
+      env:
+        - GIMME_OS=linux 
+        - GIMME_ARCH=arm
       go: 
         - 1.8
     - os: osx
-      env: GIMME_OS=darwin GIMME_ARCH=amd64
+      env: 
+        - GIMME_OS=darwin
+        - GIMME_ARCH=amd64
       go:
         - 1.7
 cache:
