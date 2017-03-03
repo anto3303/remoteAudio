@@ -1,10 +1,6 @@
 language: go
 dist: trusty
 sudo: true
-env:
-- GIMME_OS= GIMME_ARCH=amd64
-# - GIMME_OS=linux GIMME_ARCH=386
-# - GIMME_OS=linux GIMME_ARCH=arm
 matrix:
   include: 
     - os: linux
