@@ -7,20 +7,17 @@ matrix:
       env: 
         - GIMME_OS=linux 
         - GIMME_ARCH=amd64
-      go:
-        - 1.8
+      go: 1.8
     - os: linux
       env:
         - GIMME_OS=linux 
         - GIMME_ARCH=arm
-      go: 
-        - 1.8
+      go:  1.8
     - os: osx
       env: 
         - GIMME_OS=darwin
         - GIMME_ARCH=amd64
-      go:
-        - 1.7
+      go: 1.7
 cache:
   directories:
   - $HOME/protobuf
