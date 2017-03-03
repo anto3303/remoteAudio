@@ -8,11 +8,6 @@ matrix:
         - GIMME_OS=linux 
         - GIMME_ARCH=amd64
       go: 1.8
-    - os: linux
-      env:
-        - GIMME_OS=linux 
-        - GIMME_ARCH=arm
-      go:  1.8
     - os: osx
       env: 
         - GIMME_OS=darwin
@@ -34,7 +29,7 @@ addons:
     - autoconf automake libtool curl make g++ unzip
 install:
 - ./ci/install-deps-linux-osx.sh
-- export PATH=$PATH:$HOME/protobuf/bin
+# - export PATH=$PATH:$HOME/protobuf/bin
 script:
 - make dist
 before_deploy:
