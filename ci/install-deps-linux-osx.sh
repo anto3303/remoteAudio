@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ $GIMME_ARCH =~ ^(arm)$ ]]; then
+if [[ $GIMME_ARCH != "arm" ]]; then
     env GOOS=$GIMME_OS GOARCH=$GIMME_ARCH go get github.com/gogo/protobuf/protoc-gen-gofast
     env GOOS=$GIMME_OS GOARCH=$GIMME_ARCH go get github.com/GeertJohan/go.rice/rice
     env GOOS=$GIMME_OS GOARCH=$GIMME_ARCH go get -d ./...
@@ -17,7 +17,7 @@ if [[ '$TRAVIS_OS_NAME' == 'osx' ]]; then
 else #Linux
     # Ubuntu 16.04 comes with an old version of protobuf. 
     # We have to download and install a newer one
-    if [[ $GIMME_ARCH =~ ^(arm)$ ]]; then
+    if [[ $GIMME_ARCH != "arm" ]]; then
         ./ci/install-protobuf.sh
         export PATH=$PATH:$HOME/protobuf/bin
     else 
